@@ -1,0 +1,273 @@
+# EduRepo – Docker-Anleitung & Troubleshooting
+
+Diese Anleitung beschreibt den Betrieb der EduRepo-Plattform in einer
+**Docker-Container-Umgebung** (Test/Lokal/Home Server).
+
+> Voraussetzungen: **Docker ≥ 24** und **Docker Compose v2** (`docker compose`).
+> Prüfen: `docker --version && docker compose version`.
+
+---
+
+## 1. Einrichtung (erstmalig)
+
+### 1.1 `.env` erstellen
+
+```bash
+cp .env.example .env
+```
+
+Öffne `.env` und passe zwingend folgende Werte an:
+
+```ini
+# Starks Geheimnis erzeugen (z. B.):
+#   openssl rand -hex 32
+JWT_SECRET=<dein-geheimnis>
+APP_SECRET=<noch-ein-geheimnis>
+
+# SMTP (dein Mailserver)
+SMTP_HOST=smtp.dein-provider.ch
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=dein-user
+SMTP_PASS=dein-passwort
+SMTP_FROM="EduRepo <noreply@deine-domain.ch>"
+
+# Öffentliche URL (für OAuth-Redirects!)
+PUBLIC_BASE_URL=http://localhost:3000
+API_BASE_URL=http://localhost:4000
+CORS_ORIGINS=http://localhost:3000
+
+# OAuth (für Google/Microsoft-Login)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+MICROSOFT_CLIENT_ID=...
+MICROSOFT_CLIENT_SECRET=...
+MICROSOFT_TENANT=common   # oder deine Tenant-ID
+```
+
+### 1.2 OAuth-Redirect-URIs konfigurieren
+
+Trage in den jeweiligen Provider-Konsolen folgende **Redirect-URIs** ein:
+
+| Provider | Redirect-URI |
+|---|---|
+| Google Cloud Console | `${PUBLIC_BASE_URL}/api/auth/google/callback` → lokal: `http://localhost:4000/auth/google/callback`* |
+| Microsoft Entra ID | `${PUBLIC_BASE_URL}/api/auth/microsoft/callback` |
+
+\* Hinweis: Die OAuth-Start- und Callback-Endpunkte liegen im **Backend** (Port 4000).
+Falls du einen Reverse-Proxy vorlegst, leite `/api/*` ans Backend weiter und trage
+die Proxy-URL als `PUBLIC_BASE_URL` ein.
+
+### 1.3 Starten
+
+```bash
+docker compose up -d --build
+```
+
+Beim **ersten** Start passiert im Hintergrund:
+
+1. PostgreSQL, Redis, MinIO starten (mit Healthchecks).
+2. `minio-init` legt den Bucket `edurepo-files` an.
+3. Backend führt `prisma db push` aus (Schema-Synchronisation) und `prisma db seed`
+   (Fächer-Katalog + Admin-Konto).
+4. Backend und Frontend starten.
+
+Status prüfen:
+
+```bash
+docker compose ps
+```
+
+---
+
+## 2. Initialen Admin einloggen
+
+Das initiale Admin-Passwort wird **zufällig** generiert und beim ersten Seed in den
+Logs ausgegeben:
+
+```bash
+docker compose logs backend | grep -A3 "Initialer Administrator"
+```
+
+Beispiel-Ausgabe:
+
+```
+------------------------------------------------------------
+ Initialer Administrator angelegt
+   E-Mail:     admin@edurepo.local
+   Passwort:   a1b2c3d4e5f6...  (nur Development, bitte sofort ändern!)
+------------------------------------------------------------
+```
+
+Anmelden unter http://localhost:3000/de/login.
+**Passwort danach sofort im Profil ändern!**
+
+---
+
+## 3. URLs
+
+| Dienst | URL | Hinweis |
+|---|---|---|
+| Frontend | http://localhost:3000 | Next.js (App) |
+| Landing | http://localhost:3000/de | Deutsch (auch `/fr`, `/it`, `/en`) |
+| API-Docs | http://localhost:4000/api/docs | Swagger-UI |
+| MinIO Console | http://localhost:9001 | Login: `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` |
+| PostgreSQL | localhost:5432 | Direktzugriff für Tools (z. B. DBeaver) |
+| Redis | localhost:6379 | |
+
+---
+
+## 4. Häufige Befehle
+
+```bash
+# Container anzeigen
+docker compose ps
+
+# Logs (live, aller Services)
+docker compose logs -f
+
+# Nur Backend-Logs
+docker compose logs -f backend
+
+# Stoppen
+docker compose down
+
+# Stoppen + alle Daten löschen (Achtung: DB/Dateien weg!)
+docker compose down -v
+# Auch die gemounteten docker-data/ Ordner löschen:
+#   rm -rf docker-data
+
+# Nur Backend neu starten
+docker compose restart backend
+
+# Image neu bauen (nach Dependency-Änderung in package.json)
+docker compose up -d --build backend
+
+# Ein Befehl im Backend-Container ausführen
+docker compose exec backend npx prisma studio
+docker compose exec backend sh
+```
+
+---
+
+## 5. Datenbank-Schema anpassen
+
+Das Backend nutzt im Dev-Modus `prisma db push` (synchronisiert das Schema direkt beim
+Start, keine vorgenerierten Migrationen nötig).
+
+Workflow:
+
+1. `backend/prisma/schema.prisma` anpassen.
+2. `docker compose restart backend` – der Start-Hook führt `prisma db push` erneut aus.
+
+Für **reproduzierbare Migrationen** (empfohlen vor Produktion):
+
+```bash
+docker compose exec backend npx prisma migrate dev --name <name>
+```
+
+Die erzeugten Migrationsdateien werden unter `backend/prisma/migrations/` gespeichert.
+
+---
+
+## 6. Seed erneut ausführen
+
+Der Seed ist **idempotent** – er überschreibt Fächer-Kataloge nicht destruktiv und legt
+den Admin nur an, wenn er noch nicht existiert. Erneut erzwingen:
+
+```bash
+docker compose exec backend npx prisma db seed
+```
+
+---
+
+## 7. Backup & Restore
+
+### Backup (DB)
+
+```bash
+docker compose exec postgres pg_dump -U edurepo edurepo > backup.sql
+```
+
+### Restore (DB)
+
+```bash
+cat backup.sql | docker compose exec -T postgres psql -U edurepo edurepo
+```
+
+### Backup (Dateien / MinIO)
+
+Die Dateien liegen im Volume `./docker-data/minio`. Für ein Datei-Backup dieses
+Verzeichnis sichern. Alternativ mit `mc` (MinIO Client):
+
+```bash
+docker compose run --rm minio-init mc mirror local/edurepo-files /backup
+```
+
+---
+
+## 8. Produktion (Hinweise)
+
+Für den produktiven Einsatz (späterer Schritt) zusätzlich beachten:
+
+- **TLS/HTTPS**: Reverse Proxy (Caddy/Traefik/Nginx) vorlegen; HTTPS erzwingen.
+- `NODE_ENV=production` setzen.
+- Backend-Command auf `prisma migrate deploy && node dist/main.js` umstellen
+  (Build-Stage im Dockerfile ergänzen).
+- Frontend: `npm run build && npm start` statt `npm run dev`.
+- `JWT_SECRET`, `APP_SECRET`, DB-Passwörter, MinIO-Root-Credentials → streng geheim.
+- Rate-Limiting & Brute-Force-Schutz am Proxy konfigurieren.
+- Regelmässige **Backups** (DB + Object Storage) einrichten.
+- (Optional) ClamAV für Virenscan beim Upload ergänzen.
+
+---
+
+## 9. Troubleshooting
+
+| Symptom | Ursache / Lösung |
+|---|---|
+| Backend startet nicht, `Cannot connect to Postgres` | Warte, bis der `postgres`-Healthcheck grün ist. `docker compose ps`. |
+| `Bucket ready` fehlt | `minio-init` prüfen: `docker compose logs minio-init`. |
+| Frontend zeigt "Lädt …" endlos | Vermutlich nicht eingeloggt → `/login`. Oder API nicht erreichbar (`NEXT_PUBLIC_API_URL` prüfen). |
+| OAuth-Redirect fehlerhaft | `PUBLIC_BASE_URL` und Redirect-URIs in Google/Microsoft-Konsole vergleichen. |
+| Keine E-Mails kommen | `SMTP_*` prüfen. Ohne `SMTP_HOST` loggt das Backend Mails nur (Dev-Modus). |
+| 413 Payload Too Large | Datei > `MAX_FILE_SIZE_BYTES` (Default 100 MB) oder Proxy-Limit. |
+| Port bereits belegt | Port in `docker-compose.yml` oder auf dem Host ändern. |
+| Änderungen in `package.json` greifen nicht | Image neu bauen: `docker compose up -d --build backend`. |
+
+### Logs_inspezionieren
+
+```bash
+# Alle Services
+docker compose logs -f
+
+# Letzte 200 Zeilen Backend
+docker compose logs --tail 200 backend
+
+# Nur Fehler
+docker compose logs backend 2>&1 | grep -i error
+```
+
+### Komplett neu starten (frisch)
+
+```bash
+docker compose down -v
+rm -rf docker-data
+docker compose up -d --build
+docker compose logs -f backend   # Admin-Passwort notieren!
+```
+
+---
+
+## 10. Datenfluss (Kurz)
+
+```
+Browser → :3000 (Next.js Frontend, SSR) → :4000 (NestJS Backend API)
+                                              ├── PostgreSQL (Metadaten, Nutzer, Versionen)
+                                              ├── Redis (Cache/Sessions – vorbereitet)
+                                              └── MinIO/S3 (verschlüsselte Dateien, SSE)
+```
+
+Authentifizierung läuft via **httpOnly Cookie** (`access_token`, JWT). Das Cookie wird
+vom Backend beim Login gesetzt und bei jedem Request automatisch vom Browser mitgesendet.
+OAuth-Logins leiten über das Backend und setzen dasselbe Cookie.

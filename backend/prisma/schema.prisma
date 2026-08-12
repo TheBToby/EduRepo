@@ -1,0 +1,384 @@
+// EduRepo – Prisma Schema
+// Dokumentation der Anforderungen: docs/REQUIREMENTS.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  USER        // Normale Lehrperson
+  MODERATOR
+  ADMIN
+}
+
+enum AccountStatus {
+  PENDING       // Wartet auf Freigabe durch Admin/Moderator (FA-AUTH-006)
+  ACTIVE
+  SOFT_DELETED  // 30 Tage reaktivierbar (FA-AUTH-007)
+  LOCKED        // durch Admin/Moderator gesperrt
+  DEACTIVATED   // durch Admin/Moderator deaktiviert
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  MICROSOFT
+}
+
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum UiLanguage {
+  DE
+  FR
+  IT
+  EN
+}
+
+enum ContentLanguage {
+  DE
+  FR
+  IT
+  RM   // Rätoromanisch als Inhaltssprache (D-8)
+  EN
+  OTHER
+}
+
+enum SchoolLevel {
+  KINDERGARTEN
+  PRIMARY        // Primarstufe
+  LOWER_SECONDARY // Sekundarstufe I
+  UPPER_SECONDARY // Sekundarstufe II
+  TERTIARY
+}
+
+enum EducationSector {
+  GENERAL       // Allgemeinbildend
+  VOCATIONAL    // Berufsbildung
+}
+
+enum RepositoryAccess {
+  PUBLIC_DOWNLOAD       // frei herunterladbar durch alle (FA-REPO-005a)
+  APPROVAL_REQUIRED     // nur nach Freigabe durch Eigentümer (FA-REPO-005b)
+}
+
+enum MemberRole {
+  OWNER     // (Co-)Eigentümer – volle Verwaltung (FA-REPO-007)
+  COLLABORATOR
+}
+
+enum ReportTargetType {
+  RATING
+  COMMENT
+  REPOSITORY
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED_DISMISSED
+  RESOLVED_REMOVED
+}
+
+// ---------------------------------------------------------------------------
+// Nutzer & Profile
+// ---------------------------------------------------------------------------
+
+model User {
+  id                String         @id @default(uuid())
+  email             String         @unique
+  emailVerified     Boolean        @default(false)
+  // Argon2-Hash; null bei reinen OAuth-Accounts ohne Passwort
+  passwordHash      String?
+  displayName       String
+  avatarUrl         String?
+  bio               String?
+  role              UserRole       @default(USER)
+  status            AccountStatus  @default(PENDING)
+  uiLanguage        UiLanguage     @default(DE)
+  themePreference   ThemePreference @default(SYSTEM)
+  // Kontingent in Bytes (FA-FILE-007) – durch Admin/Moderator festlegbar
+  storageQuotaBytes BigInt         @default(1073741824) // 1 GB Default
+  schoolLevels      SchoolLevel[]  @default([])
+  subjects          String[]       @default([])   // Freitext-/Katalog-Fächer
+  educationSector   EducationSector?
+  provider          AuthProvider   @default(EMAIL)
+  providerId        String?        // Externe ID bei OAuth
+
+  // Soft-Delete (FA-AUTH-007)
+  deletedAt         DateTime?
+  permanentDeleteAt DateTime?
+
+  // Audit
+  lastLoginAt       DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Beziehungen
+  repositories      Repository[]
+  memberships       RepositoryMember[]
+  ownedRepositories Repository[] @relation("OwnerRepositories")
+  ratings           Rating[]
+  comments          Comment[]
+  reportsCreated    Report[]       @relation("ReportReporter")
+  auditLogs         AuditLog[]
+  tokens            Token[]
+  notifications     Notification[]
+
+  @@index([status])
+  @@index([role])
+  @@map("users")
+}
+
+// Verifizierungs-/Reset-/OAuth-Link-Tokens (FA-AUTH-005, 006)
+model Token {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  type      String   // 'email_verify' | 'password_reset' | 'invite'
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, type])
+  @@map("tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Kataloge (durch Moderatoren verwaltbar – FA-META-001)
+// ---------------------------------------------------------------------------
+
+model Subject {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique // z. B. "math"
+  // Mehrsprachige Labels als JSON: { "de": "...", "fr": "...", ... }
+  labels      Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@map("subjects")
+}
+
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  @@map("tags")
+}
+
+// ---------------------------------------------------------------------------
+// Repositories / Lehrmittel (FA-REPO)
+// ---------------------------------------------------------------------------
+
+model Repository {
+  id             String           @id @default(uuid())
+  // Titel/Beschreibung sind mehrsprachig (FA-META-003)
+  title          Json             // { "de": "...", "fr": "...", ... }
+  description    Json
+  access         RepositoryAccess @default(APPROVAL_REQUIRED)
+  subjectId      Int?
+  subject        Subject?         @relation(fields: [subjectId], references: [id])
+  schoolLevel    SchoolLevel?
+  contentLanguage ContentLanguage @default(DE)
+  license        String?          // z. B. "CC-BY-SA"
+  materialType   String?
+  educationSector EducationSector?
+  // Lehrplan-21-Bezug: Zyklus / Kompetenzbereich
+  curriculum21   String?
+  learningGoals  String?
+  targetGroup    String?
+  timeRequired   String?
+  difficulty     String?
+  methodology    String?
+  prerequisites  String?
+  isFork         Boolean          @default(false)
+  forkedFromId   String?
+  forkedFrom     Repository?      @relation("ForkSource", fields: [forkedFromId], references: [id])
+  forks          Repository[]     @relation("ForkSource")
+
+  ownerId        String
+  owner          User             @relation("OwnerRepositories", fields: [ownerId], references: [id])
+  members        RepositoryMember[]
+  versions       RepositoryVersion[]
+  tags           RepositoryTag[]
+  ratings        Rating[]
+  comments       Comment[]
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([ownerId])
+  @@index([access])
+  @@index([subjectId])
+  @@index([schoolLevel])
+  @@index([contentLanguage])
+  @@map("repositories")
+}
+
+model RepositoryMember {
+  id           String      @id @default(uuid())
+  repositoryId String
+  repository   Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         MemberRole  @default(COLLABORATOR)
+  approved     Boolean     @default(false) // bei APPROVAL_REQUIRED
+  createdAt    DateTime    @default(now())
+  @@unique([repositoryId, userId])
+  @@map("repository_members")
+}
+
+model RepositoryTag {
+  repositoryId String
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  tagId        Int
+  tag          Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  @@id([repositoryId, tagId])
+  @@map("repository_tags")
+}
+
+// ---------------------------------------------------------------------------
+// Versionen & Dateien (FA-REPO-003/004, FA-FILE)
+// ---------------------------------------------------------------------------
+
+model RepositoryVersion {
+  id           String   @id @default(uuid())
+  repositoryId String
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  version      Int      // aufsteigende Nummer
+  changeNote   String?
+  createdBy    String?
+  files        FileAsset[]
+  createdAt    DateTime @default(now())
+  @@index([repositoryId, version])
+  @@map("repository_versions")
+}
+
+model FileAsset {
+  id             String   @id @default(uuid())
+  versionId      String
+  version        RepositoryVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  originalName   String
+  mimeType       String
+  sizeBytes      BigInt
+  // Object-Key im S3/MinIO (verschlüsselt at-rest – NFA-SEC-001)
+  storageKey     String
+  // Prüfsumme zur Integrität / Deduplizierung
+  sha256         String
+  // Verschlüsselungs-Metadaten (SSE)
+  encryption     String   @default("AES256")
+  createdAt      DateTime @default(now())
+  @@index([versionId])
+  @@map("file_assets")
+}
+
+// ---------------------------------------------------------------------------
+// Bewertungen & Kommentare (FA-RATE)
+// ---------------------------------------------------------------------------
+
+model Rating {
+  id            String     @id @default(uuid())
+  repositoryId  String
+  repository    Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Bewertungskategorien (1–5)
+  overall       Int        // Pflicht
+  didactics     Int?
+  methodology   Int?
+  correctness   Int?
+  usability     Int?
+  clarity       Int?
+  prepTime      Int?       // niedrig = gut
+  engagement    Int?
+  comment       String?
+  edited        Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  @@unique([repositoryId, userId])
+  @@map("ratings")
+}
+
+model Comment {
+  id           String      @id @default(uuid())
+  repositoryId String
+  repository   Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId     String?
+  parent       Comment?    @relation("CommentReplies", fields: [parentId], references: [id])
+  replies      Comment[]   @relation("CommentReplies")
+  text         String
+  removed      Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  @@index([repositoryId])
+  @@map("comments")
+}
+
+// ---------------------------------------------------------------------------
+// Moderation (FA-MOD)
+// ---------------------------------------------------------------------------
+
+model Report {
+  id           String          @id @default(uuid())
+  reporterId   String
+  reporter     User            @relation("ReportReporter", fields: [reporterId], references: [id])
+  targetType   ReportTargetType
+  targetId     String
+  reason       String
+  status       ReportStatus    @default(OPEN)
+  handledById  String?
+  handledAt    DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  @@index([status])
+  @@map("reports")
+}
+
+// ---------------------------------------------------------------------------
+// Audit-Log (FA-ROLE-007, NFA-SEC-008)
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String   // z. B. 'user.lock', 'repository.remove', 'role.change'
+  targetType String?
+  targetId   String?
+  details    Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+  @@index([actorId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Benachrichtigungen (FA-NOTIF)
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // z. B. 'registration_approved', 'new_rating', 'download_request'
+  payload   Json?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId, readAt])
+  @@map("notifications")
+}
