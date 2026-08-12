@@ -23,7 +23,7 @@ export class ModerationService {
   }
 
   // Meldung bearbeiten (FA-MOD-002/003)
-  async resolve(reportId: string, handlerId: string, status: ReportStatus.RESOLVED_REMOVED | ReportStatus.RESOLVED_DISMISSED) {
+  async resolve(reportId: string, handlerId: string, status: typeof ReportStatus.RESOLVED_REMOVED | typeof ReportStatus.RESOLVED_DISMISSED) {
     const report = await this.prisma.report.findUnique({ where: { id: reportId } });
     if (!report) throw new NotFoundException('Meldung nicht gefunden.');
 

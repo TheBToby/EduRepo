@@ -14,12 +14,17 @@ export class StorageService implements OnModuleInit {
   private bucket: string;
 
   constructor() {
-    const endpoint = (process.env.S3_ENDPOINT || 'http://minio:9000')
-      .replace(/^https?:\/\//, '');
+    // MinIO/S3 Endpoint zerlegen: Host und Port (ohne Protokoll) separieren,
+    // da der minio-Client endPoint ohne Port erwartet.
+    const rawEndpoint = process.env.S3_ENDPOINT || 'http://minio:9000';
+    const useSSL = rawEndpoint.startsWith('https://');
+    const cleaned = rawEndpoint.replace(/^https?:\/\//, '');
+    const [host, portStr] = cleaned.split(':');
+    const port = parseInt(portStr || '9000', 10);
     this.client = new Minio.Client({
-      endPoint: endpoint,
-      port: parseInt(endpoint.match(/:(\d+)/)?.[1] || '9000', 10),
-      useSSL: (process.env.S3_ENDPOINT || '').startsWith('https'),
+      endPoint: host,
+      port,
+      useSSL,
       accessKey: process.env.S3_ACCESS_KEY_ID || 'edurepo-minio',
       secretKey: process.env.S3_SECRET_ACCESS_KEY || 'edurepo-minio-secret',
       region: process.env.S3_REGION || 'us-east-1',

@@ -127,7 +127,6 @@ model User {
   updatedAt         DateTime       @updatedAt
 
   // Beziehungen
-  repositories      Repository[]
   memberships       RepositoryMember[]
   ownedRepositories Repository[] @relation("OwnerRepositories")
   ratings           Rating[]
@@ -162,19 +161,21 @@ model Token {
 // ---------------------------------------------------------------------------
 
 model Subject {
-  id          Int      @id @default(autoincrement())
-  key         String   @unique // z. B. "math"
+  id           Int      @id @default(autoincrement())
+  key          String   @unique // z. B. "math"
   // Mehrsprachige Labels als JSON: { "de": "...", "fr": "...", ... }
-  labels      Json
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  labels       Json
+  repositories Repository[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   @@map("subjects")
 }
 
 model Tag {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now())
+  id             Int            @id @default(autoincrement())
+  name           String         @unique
+  repositoryTags RepositoryTag[]
+  createdAt      DateTime       @default(now())
   @@map("tags")
 }
 
