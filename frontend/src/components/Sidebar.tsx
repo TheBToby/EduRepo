@@ -5,7 +5,8 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '../i18n/navigation';
-import { useSession, avatarSrc } from './SessionProvider';
+import { useSession } from './SessionProvider';
+import { Avatar } from './Avatar';
 
 type NavItem = {
   href: string;
@@ -41,13 +42,6 @@ export function Sidebar() {
     router.push('/');
     router.refresh();
   };
-
-  const initials = (user.displayName || user.email)
-    .split(' ')
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 
   return (
     <>
@@ -109,14 +103,8 @@ export function Sidebar() {
         {/* Nutzer-Bereich unten */}
         <div className="border-t border-[rgb(var(--border))] p-3">
           <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-            {avatarSrc(user.avatarUrl) ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarSrc(user.avatarUrl) as string} alt="" className="h-9 w-9 rounded-full object-cover" />
-            ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
-                {initials}
-              </span>
-            )}
+            {/* Avatar mit Standard-Profilbild, wenn keines hochgeladen wurde */}
+            <Avatar avatarUrl={user.avatarUrl} name={user.displayName || user.email} size={36} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{user.displayName}</p>
               <p className="truncate text-xs text-[rgb(var(--foreground))]/50">{user.role}</p>

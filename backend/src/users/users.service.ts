@@ -21,6 +21,13 @@ export class UsersService {
     return this.sanitize(user);
   }
 
+  /** Profil eines beliebigen Nutzers (fuer die Admin/Moderator-Ansicht). */
+  async getProfileById(targetUserId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!user) throw new NotFoundException('Nutzer nicht gefunden.');
+    return this.sanitize(user);
+  }
+
   async updateProfile(userId: string, data: {
     displayName?: string;
     bio?: string;
@@ -30,6 +37,14 @@ export class UsersService {
     schoolLevels?: any[];
     subjects?: string[];
     educationSector?: 'GENERAL' | 'VOCATIONAL';
+    // Lehrpersonen-Profil (FA-PROF)
+    jobTitle?: string;
+    education?: string;
+    furtherEducation?: string;
+    schools?: string[];
+    curriculumVitae?: string;
+    yearsOfExperience?: number;
+    websiteUrl?: string;
   }) {
     const user = await this.prisma.user.update({ where: { id: userId }, data });
     return this.sanitize(user);
@@ -112,6 +127,11 @@ export class UsersService {
 
   /** Avatar-Bild als Buffer liefern (fuer GET /users/me/avatar). */
   async getAvatar(userId: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+    return this.getAvatarById(userId);
+  }
+
+  /** Avatar eines beliebigen Nutzers (fuer GET /users/:id/avatar, Admin-Ansicht). */
+  async getAvatarById(userId: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user?.avatarUrl || !user.avatarUrl.startsWith('avatar:')) return null;
     const key = user.avatarUrl.slice('avatar:'.length);
@@ -155,16 +175,61 @@ export class UsersService {
     return { ok: true };
   }
 
-  // --- Sperren / Deaktivieren (FA-ROLE-002/003/004) ---
+  // --- Sperren / Deaktivieren / Reaktivieren (FA-ROLE-002/003/004) ---
   async setStatus(userId: string, status: AccountStatus, actorId: string, reason?: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('Nutzer nicht gefunden.');
     if (user.role === UserRole.ADMIN) {
       throw new BadRequestException('Administratoren können nicht geändert werden.');
     }
-    const updated = await this.prisma.user.update({ where: { id: userId }, data: { status } });
+    if (status === AccountStatus.ACTIVE && user.status === AccountStatus.SOFT_DELETED) {
+      throw new BadRequestException(
+        'Ein gelöschtes Konto kann nur über die Reaktivierung per Login wiederhergestellt werden.',
+      );
+    }
+    // Reaktivierung: eventuelle Lösch-Marker zurücksetzen
+    const data: any = { status };
+    if (status === AccountStatus.ACTIVE) {
+      data.deletedAt = null;
+      data.permanentDeleteAt = null;
+    }
+    const updated = await this.prisma.user.update({ where: { id: userId }, data });
     await this.audit(actorId, `user.set_status:${status}`, userId, { reason });
     return this.sanitize(updated);
+  }
+
+  // --- Löschen mit Kulanzfrist (FA-AUTH-007, Admin) ---
+  // Der Nutzer wird auf SOFT_DELETED gesetzt und nach Ablauf der Kulanzfrist
+  // (permanentDeleteAt) durch purgeExpiredUsers() endgültig gelöscht.
+  // Optional werden die Lehrmittel vorab auf einen anderen Nutzer übertragen.
+  async deleteWithRetention(userId: string, actorId: string, retentionDays = 30, transferToUserId?: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Nutzer nicht gefunden.');
+    if (user.role === UserRole.ADMIN) {
+      throw new BadRequestException('Administratoren können nicht gelöscht werden.');
+    }
+    const permanentDeleteAt = new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000);
+    await this.prisma.$transaction(async (tx) => {
+      if (transferToUserId) {
+        const target = await tx.user.findUnique({ where: { id: transferToUserId } });
+        if (!target) throw new NotFoundException('Ziel-Nutzer für Eigentumsübertragung nicht gefunden.');
+        await tx.repository.updateMany({ where: { ownerId: userId }, data: { ownerId: transferToUserId } });
+      }
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          status: AccountStatus.SOFT_DELETED,
+          deletedAt: new Date(),
+          permanentDeleteAt,
+        },
+      });
+    });
+    await this.audit(actorId, 'user.delete_with_retention', userId, {
+      retentionDays,
+      permanentDeleteAt: permanentDeleteAt.toISOString(),
+      transferredTo: transferToUserId ?? null,
+    });
+    return { ok: true, permanentDeleteAt: permanentDeleteAt.toISOString() };
   }
 
   // --- Rolle ändern (nur Admin – FA-ROLE-005) ---

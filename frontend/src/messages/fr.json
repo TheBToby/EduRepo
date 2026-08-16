@@ -15,7 +15,8 @@
     "theme": "Thème",
     "light": "Clair",
     "dark": "Sombre",
-    "system": "Système"
+    "system": "Système",
+    "email": "E-mail"
   },
   "landing": {
     "heroTitle": "Plateforme d'échange pour les enseignants suisses",
@@ -60,7 +61,7 @@
     "deleteAccountDesc": "Votre compte sera désactivé et réactivable pendant 30 jours. Vous pouvez transférer vos moyens d'enseignement à une autre personne.",
     "transferTo": "Transférer la propriété à (e-mail/ID facultatif)",
     "changeAvatar": "Changer la photo de profil",
-    "avatarHint": "PNG, JPG, WEBP ou GIF – max. 5 Mo",
+    "avatarHint": "PNG, JPG, WEBP ou GIF – max. 5 Mo. Sans photo personnelle, une photo de profil par défaut est affichée.",
     "avatarUpdated": "Photo de profil mise à jour",
     "changePasswordTitle": "Changer le mot de passe",
     "currentPassword": "Mot de passe actuel",
@@ -74,6 +75,41 @@
     "browse": "Découvrir",
     "profile": "Profil",
     "admin": "Administration"
+  },
+  "teacherProfile": {
+    "sectionTitle": "Mon métier d'enseignant",
+    "sectionHint": "Ces informations apparaissent sur votre profil et aident les autres enseignants à mieux vous connaître, vous et vos matériaux.",
+    "bio": "Brève description",
+    "jobTitle": "Fonction / titre professionnel",
+    "jobTitlePlaceholder": "p. ex. enseignant primaire, enseignant de mathématiques au gymnase, pédagogue spécialisé",
+    "education": "Formation",
+    "educationPlaceholder": "p. ex. brevet d'enseignement primaire (HEP Lucerne), master secondaire II …",
+    "furtherEducation": "Formation continue",
+    "furtherEducationPlaceholder": "p. ex. CAS enseignement numérique, certificat L2I …",
+    "schools": "Écoles",
+    "schoolsPlaceholder": "p. ex. école primaire Musterdorf, gymnase de Beispielstadt",
+    "subjects": "Branches / spécialisation",
+    "subjectsPlaceholder": "p. ex. mathématiques, physique, informatique",
+    "schoolLevels": "Degrés scolaires",
+    "levels": {
+      "KINDERGARTEN": "Jardin d'enfants",
+      "PRIMARY": "Primaire",
+      "LOWER_SECONDARY": "Secondaire I",
+      "UPPER_SECONDARY": "Secondaire II",
+      "TERTIARY": "Tertiaire"
+    },
+    "educationSector": "Secteur de formation",
+    "sectors": {
+      "GENERAL": "Formation générale",
+      "VOCATIONAL": "Formation professionnelle"
+    },
+    "yearsOfExperience": "Années d'expérience d'enseignement",
+    "curriculumVitae": "Court CV (quick CV)",
+    "curriculumVitaePlaceholder": "Court CV : étapes, axes prioritaires, projets …",
+    "websiteUrl": "Site web / portfolio",
+    "listHint": "Séparez plusieurs entrées par des virgules.",
+    "noSelection": "— non renseigné —",
+    "saved": "Enregistré"
   },
   "repo": {
     "create": "Nouveau moyen",
@@ -98,7 +134,28 @@
     "ratings": "Évaluations",
     "comments": "Commentaires",
     "addComment": "Écrire un commentaire",
-    "reportAbuse": "Signaler"
+    "reportAbuse": "Signaler",
+    "backToMine": "Retour à mes moyens",
+    "noVersions": "Pas encore de versions.",
+    "noFiles": "Aucun fichier dans cette version.",
+    "learningGoals": "Objectifs d'apprentissage",
+    "targetGroup": "Groupe cible",
+    "memberNotice": "En tant que membre, vous pouvez co-gérer ce moyen.",
+    "updated": "Moyen mis à jour.",
+    "versionCreated": "Nouvelle version créée. Téléversez maintenant des fichiers.",
+    "fileUploaded": "Fichier {name} téléversé.",
+    "star": "Étoiler",
+    "tabOverview": "Aperçu",
+    "tabFiles": "Fichiers",
+    "tabIssues": "Issues",
+    "tabPrs": "Pull requests",
+    "tabMembers": "Membres",
+    "tabChildren": "Sous-moyens",
+    "newVersionTitle": "Créer une nouvelle version",
+    "changeNotePlaceholder": "Note de modification (p. ex. « chapitre 3 révisé »)",
+    "newVersion": "Version",
+    "memberUserIdPlaceholder": "ID utilisateur du collaborateur",
+    "memberUserIdHint": "L'ID utilisateur se trouve dans la gestion des utilisateurs (admin) ou se partage directement."
   },
   "admin": {
     "pendingUsers": "Inscriptions",
@@ -107,6 +164,7 @@
     "users": "Utilisateurs",
     "lock": "Bloquer",
     "deactivate": "Désactiver",
+    "activate": "Activer",
     "setRole": "Changer le rôle",
     "setQuota": "Quota de stockage",
     "createUserTitle": "Gestion des utilisateurs",
@@ -115,9 +173,109 @@
     "passwordOptional": "facultatif",
     "passwordHint": "Sans mot de passe, l'utilisateur ne peut pas se connecter par e-mail (p. ex. OAuth uniquement).",
     "noPending": "Aucune inscription en attente.",
-    "actions": "Actions"
+    "actions": "Actions",
+    "status": "Statut",
+    "statusUpdated": "Statut mis à jour.",
+    "deleteUser": "Supprimer",
+    "deleteConfirm": "Supprimer l'utilisateur {name} ? Le compte sera conservé pendant {days} jours (délai de conservation) puis définitivement supprimé.",
+    "deleteScheduled": "Suppression planifiée. Suppression définitive le {date}.",
+    "transferOwnershipPrompt": "Transférer la propriété (moyens) à l'ID utilisateur (facultatif, laisser vide pour aucun transfert) :",
+    "retentionRunning": "Suppression dans {days} jours",
+    "rejectReasonPrompt": "Motif du refus (facultatif) :",
+    "userProfile": "Profil de l'utilisateur",
+    "backToUsers": "Retour à la gestion des utilisateurs",
+    "accountData": "Données du compte",
+    "email": "E-mail",
+    "role": "Rôle",
+    "provider": "Méthode de connexion",
+    "uiLanguage": "Langue",
+    "quota": "Quota de stockage",
+    "createdAt": "Créé le",
+    "lastLogin": "Dernière connexion",
+    "readOnlyNotice": "Cette vue est en lecture seule. Les modifications se font via la gestion des utilisateurs ou par l'utilisateur lui-même."
   },
   "help": {
     "repoAccess": "Choisissez « Téléchargement libre » pour que tous puissent télécharger. Choisissez « Autorisation requise » pour contrôler l'accès par personne."
+  },
+  "repoMeta": {
+    "metadataTitle": "Métadonnées",
+    "noSelection": "— non renseigné —",
+    "materialType": "Type de matériel",
+    "types": {
+      "worksheet": "Fiche de travail",
+      "presentation": "Présentation",
+      "quiz": "Quiz",
+      "lessonPlan": "Plan de leçon",
+      "reading": "Texte de lecture",
+      "video": "Vidéo",
+      "interactive": "Matériel interactif",
+      "assessment": "Évaluation",
+      "other": "Autre"
+    },
+    "educationSector": "Secteur de formation",
+    "sectors": {
+      "GENERAL": "Formation générale",
+      "VOCATIONAL": "Formation professionnelle"
+    },
+    "levels": {
+      "KINDERGARTEN": "Jardin d'enfants",
+      "PRIMARY": "Primaire",
+      "LOWER_SECONDARY": "Secondaire I",
+      "UPPER_SECONDARY": "Secondaire II",
+      "TERTIARY": "Tertiaire"
+    },
+    "langs": {
+      "DE": "Allemand",
+      "FR": "Français",
+      "IT": "Italien",
+      "RM": "Romanche",
+      "EN": "Anglais",
+      "OTHER": "Autre"
+    },
+    "curriculum21": "Lehrplan 21 (cycle / domaine de compétences)",
+    "curriculum21Placeholder": "p. ex. cycle 2, mathématiques – grandeurs et fonctions",
+    "targetGroup": "Groupe cible",
+    "targetGroupPlaceholder": "p. ex. 5e primaire, 3e secondaire",
+    "timeRequired": "Temps nécessaire",
+    "timeRequiredPlaceholder": "p. ex. 2 leçons de 45 min",
+    "difficulty": "Difficulté",
+    "difficultyLevels": {
+      "beginner": "Facile",
+      "intermediate": "Moyen",
+      "advanced": "Exigeant"
+    },
+    "methodology": "Méthodologie / didactique",
+    "prerequisites": "Prérequis",
+    "tags": "Mots-clés (tags)",
+    "parentRepo": "Moyen parent (master)",
+    "noParent": "— aucun master (autonome) —",
+    "parentRepoHint": "Choisissez un moyen parent pour rattacher ce matériel comme sous-référentiel (p. ex. thème annuel → leçons).",
+    "subRepoBadge": "Sub",
+    "childrenHint": "Les sous-moyens sont des moyens indépendants avec leur propre versionnage, rattachés à ce master.",
+    "noChildren": "Pas encore de sous-moyens. Créez un nouveau moyen et choisissez celui-ci comme master."
+  },
+  "repoIssues": {
+    "new": "Nouvel issue",
+    "open": "Ouvert",
+    "closed": "Fermé",
+    "all": "Tous",
+    "closeIssue": "Fermer",
+    "reopenIssue": "Rouvrir",
+    "empty": "Aucun issue. Signalez des erreurs ou des souhaits de collaboration.",
+    "backToList": "Retour aux issues",
+    "comments": "Commentaires",
+    "comment": "Commenter",
+    "commentPlaceholder": "Votre commentaire …"
+  },
+  "repoPrs": {
+    "new": "Nouvelle pull request",
+    "hint": "Les pull requests reprennent les changements d'un sous-moyen comme nouvelle version de ce moyen.",
+    "sourceRepo": "Source (sous-moyen)",
+    "sourceRepoHint": "Sélectionnez le sous-moyen dont la version actuelle doit être reprise.",
+    "merge": "Merger",
+    "merged": "Mergé",
+    "close": "Fermer",
+    "empty": "Aucune pull request.",
+    "mergeConfirm": "Merger la pull request #{number} ? La version actuelle de la source sera reprise comme nouvelle version."
   }
 }

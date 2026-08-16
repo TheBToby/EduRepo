@@ -4,7 +4,8 @@
 // Gaeste sehen nichts (Login/Registrierung laeuft ueber die Landing Page).
 import { useTranslations } from 'next-intl';
 import { useRouter } from '../i18n/navigation';
-import { useSession, avatarSrc } from './SessionProvider';
+import { useSession } from './SessionProvider';
+import { Avatar } from './Avatar';
 
 export function HeaderUserArea() {
   const tCommon = useTranslations('common');
@@ -14,13 +15,6 @@ export function HeaderUserArea() {
   if (loading) return null;
   if (!user) return null;
 
-  const initials = (user.displayName || user.email)
-    .split(' ')
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-
   return (
     <div className="ml-2 flex items-center gap-2 border-l border-[rgb(var(--border))] pl-3">
       <button
@@ -28,14 +22,8 @@ export function HeaderUserArea() {
         className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium hover:bg-[rgb(var(--muted))]"
         title={user.email}
       >
-        {avatarSrc(user.avatarUrl) ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarSrc(user.avatarUrl) as string} alt="" className="h-7 w-7 rounded-full object-cover" />
-        ) : (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
-            {initials}
-          </span>
-        )}
+        {/* Avatar mit Standard-Profilbild, wenn keines hochgeladen wurde */}
+        <Avatar avatarUrl={user.avatarUrl} name={user.displayName || user.email} size={28} />
         <span className="hidden max-w-[10rem] truncate sm:inline">{user.displayName}</span>
       </button>
       <button

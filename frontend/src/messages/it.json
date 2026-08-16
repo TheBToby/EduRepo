@@ -15,7 +15,8 @@
     "theme": "Tema",
     "light": "Chiaro",
     "dark": "Scuro",
-    "system": "Sistema"
+    "system": "Sistema",
+    "email": "E-mail"
   },
   "landing": {
     "heroTitle": "Piattaforma di scambio per docenti svizzeri",
@@ -60,7 +61,7 @@
     "deleteAccountDesc": "Il tuo account verrà disattivato e riattivabile per 30 giorni. Puoi trasferire i tuoi mezzi didattici a un'altra persona.",
     "transferTo": "Trasferisci proprietà a (e-mail/ID facoltativo)",
     "changeAvatar": "Cambia immagine del profilo",
-    "avatarHint": "PNG, JPG, WEBP o GIF – max. 5 MB",
+    "avatarHint": "PNG, JPG, WEBP o GIF – max. 5 MB. Senza un'immagine personale, viene mostrata un'immagine profilo predefinita.",
     "avatarUpdated": "Immagine del profilo aggiornata",
     "changePasswordTitle": "Cambia password",
     "currentPassword": "Password attuale",
@@ -74,6 +75,41 @@
     "browse": "Esplora",
     "profile": "Profilo",
     "admin": "Amministrazione"
+  },
+  "teacherProfile": {
+    "sectionTitle": "Il mio mestiere di docente",
+    "sectionHint": "Queste informazioni appaiono nel tuo profilo e aiutano altri docenti a conoscere meglio te e i tuoi materiali.",
+    "bio": "Breve descrizione",
+    "jobTitle": "Funzione / titolo professionale",
+    "jobTitlePlaceholder": "p. es. docente di scuola primaria, docente di matematica al ginnasio, pedagogista specializzato",
+    "education": "Formazione",
+    "educationPlaceholder": "p. es. patentino di scuola primaria (PH Lucerna), master secondaria II …",
+    "furtherEducation": "Formazione continua",
+    "furtherEducationPlaceholder": "p. es. CAS didattica digitale, certificato L2I …",
+    "schools": "Scuole",
+    "schoolsPlaceholder": "p. es. scuola primaria Musterdorf, ginnasio di Beispielstadt",
+    "subjects": "Materie / specializzazione",
+    "subjectsPlaceholder": "p. es. matematica, fisica, informatica",
+    "schoolLevels": "Gradi scolastici",
+    "levels": {
+      "KINDERGARTEN": "Scuola dell'infanzia",
+      "PRIMARY": "Primaria",
+      "LOWER_SECONDARY": "Secondaria I",
+      "UPPER_SECONDARY": "Secondaria II",
+      "TERTIARY": "Terziaria"
+    },
+    "educationSector": "Settore formativo",
+    "sectors": {
+      "GENERAL": "Formazione generale",
+      "VOCATIONAL": "Formazione professionale"
+    },
+    "yearsOfExperience": "Anni di esperienza d'insegnamento",
+    "curriculumVitae": "Breve CV (quick CV)",
+    "curriculumVitaePlaceholder": "Breve CV: tappe, temi prioritari, progetti …",
+    "websiteUrl": "Sito web / portfolio",
+    "listHint": "Separa più voci con virgole.",
+    "noSelection": "— non indicato —",
+    "saved": "Salvato"
   },
   "repo": {
     "create": "Nuovo mezzo",
@@ -98,7 +134,28 @@
     "ratings": "Valutazioni",
     "comments": "Commenti",
     "addComment": "Scrivi un commento",
-    "reportAbuse": "Segnala"
+    "reportAbuse": "Segnala",
+    "backToMine": "Torna ai miei mezzi",
+    "noVersions": "Ancora nessuna versione.",
+    "noFiles": "Nessun file in questa versione.",
+    "learningGoals": "Obiettivi di apprendimento",
+    "targetGroup": "Gruppo target",
+    "memberNotice": "Come membro puoi co-gestire questo mezzo.",
+    "updated": "Mezzo aggiornato.",
+    "versionCreated": "Nuova versione creata. Carica ora i file.",
+    "fileUploaded": "File {name} caricato.",
+    "star": "Metti stella",
+    "tabOverview": "Panoramica",
+    "tabFiles": "File",
+    "tabIssues": "Issues",
+    "tabPrs": "Pull request",
+    "tabMembers": "Membri",
+    "tabChildren": "Sotto-mezzi",
+    "newVersionTitle": "Crea nuova versione",
+    "changeNotePlaceholder": "Nota di modifica (p. es. «capitolo 3 rivisto»)",
+    "newVersion": "Versione",
+    "memberUserIdPlaceholder": "ID utente del collaboratore",
+    "memberUserIdHint": "L'ID utente si trova nella gestione utenti (admin) oppure si condivide direttamente."
   },
   "admin": {
     "pendingUsers": "Registrazioni",
@@ -107,6 +164,7 @@
     "users": "Utenti",
     "lock": "Blocca",
     "deactivate": "Disattiva",
+    "activate": "Attiva",
     "setRole": "Cambia ruolo",
     "setQuota": "Quota di archiviazione",
     "createUserTitle": "Gestione utenti",
@@ -115,9 +173,109 @@
     "passwordOptional": "facoltativa",
     "passwordHint": "Senza password, l'utente non può accedere via e-mail (p. es. solo OAuth).",
     "noPending": "Nessuna registrazione in attesa.",
-    "actions": "Azioni"
+    "actions": "Azioni",
+    "status": "Stato",
+    "statusUpdated": "Stato aggiornato.",
+    "deleteUser": "Elimina",
+    "deleteConfirm": "Eliminare l'utente {name}? L'account sarà conservato per {days} giorni (periodo di conservazione) e poi eliminato definitivamente.",
+    "deleteScheduled": "Eliminazione pianificata. Eliminazione definitiva il {date}.",
+    "transferOwnershipPrompt": "Trasferisci la proprietà (mezzi) all'ID utente (facoltativo, lascia vuoto per nessun trasferimento):",
+    "retentionRunning": "Eliminazione tra {days} giorni",
+    "rejectReasonPrompt": "Motivo del rifiuto (facoltativo):",
+    "userProfile": "Profilo utente",
+    "backToUsers": "Torna alla gestione utenti",
+    "accountData": "Dati dell'account",
+    "email": "E-mail",
+    "role": "Ruolo",
+    "provider": "Metodo di accesso",
+    "uiLanguage": "Lingua",
+    "quota": "Quota di archiviazione",
+    "createdAt": "Creato il",
+    "lastLogin": "Ultimo accesso",
+    "readOnlyNotice": "Questa vista è di sola lettura. Le modifiche avvengono tramite la gestione utenti o dall'utente stesso."
   },
   "help": {
     "repoAccess": "Scegli «Download libero» per consentire a tutti di scaricare. Scegli «Autorizzazione necessaria» per controllare l'accesso per persona."
+  },
+  "repoMeta": {
+    "metadataTitle": "Metadati",
+    "noSelection": "— non indicato —",
+    "materialType": "Tipo di materiale",
+    "types": {
+      "worksheet": "Foglio di lavoro",
+      "presentation": "Presentazione",
+      "quiz": "Quiz",
+      "lessonPlan": "Piano di lezione",
+      "reading": "Testo di lettura",
+      "video": "Video",
+      "interactive": "Materiale interattivo",
+      "assessment": "Verifica",
+      "other": "Altro"
+    },
+    "educationSector": "Settore formativo",
+    "sectors": {
+      "GENERAL": "Formazione generale",
+      "VOCATIONAL": "Formazione professionale"
+    },
+    "levels": {
+      "KINDERGARTEN": "Scuola dell'infanzia",
+      "PRIMARY": "Primaria",
+      "LOWER_SECONDARY": "Secondaria I",
+      "UPPER_SECONDARY": "Secondaria II",
+      "TERTIARY": "Terziaria"
+    },
+    "langs": {
+      "DE": "Tedesco",
+      "FR": "Francese",
+      "IT": "Italiano",
+      "RM": "Romancio",
+      "EN": "Inglese",
+      "OTHER": "Altro"
+    },
+    "curriculum21": "Lehrplan 21 (ciclo / ambito di competenza)",
+    "curriculum21Placeholder": "p. es. ciclo 2, matematica – grandezze e funzioni",
+    "targetGroup": "Gruppo target",
+    "targetGroupPlaceholder": "p. es. 5ª primaria, 3ª secondaria",
+    "timeRequired": "Tempo richiesto",
+    "timeRequiredPlaceholder": "p. es. 2 lezioni da 45 min",
+    "difficulty": "Difficoltà",
+    "difficultyLevels": {
+      "beginner": "Facile",
+      "intermediate": "Medio",
+      "advanced": "Impegnativo"
+    },
+    "methodology": "Metodologia / didattica",
+    "prerequisites": "Prerequisiti",
+    "tags": "Parole chiave (tag)",
+    "parentRepo": "Mezzo sovraordinato (master)",
+    "noParent": "— nessun master (autonomo) —",
+    "parentRepoHint": "Scegli un mezzo master per inserire questo materiale come sotto-repository (p. es. tema annuale → lezioni).",
+    "subRepoBadge": "Sub",
+    "childrenHint": "I sotto-mezzi sono mezzi indipendenti con propria versionamento, subordinati a questo master.",
+    "noChildren": "Ancora nessun sotto-mezzo. Crea un nuovo mezzo e seleziona questo come master."
+  },
+  "repoIssues": {
+    "new": "Nuovo issue",
+    "open": "Aperto",
+    "closed": "Chiuso",
+    "all": "Tutti",
+    "closeIssue": "Chiudi",
+    "reopenIssue": "Riapri",
+    "empty": "Nessun issue. Segnala errori o desideri di collaborazione.",
+    "backToList": "Torna agli issue",
+    "comments": "Commenti",
+    "comment": "Commenta",
+    "commentPlaceholder": "Il tuo commento …"
+  },
+  "repoPrs": {
+    "new": "Nuova pull request",
+    "hint": "Le pull request riprendono le modifiche di un sotto-mezzo come nuova versione di questo mezzo.",
+    "sourceRepo": "Sorgente (sotto-mezzo)",
+    "sourceRepoHint": "Seleziona il sotto-mezzo di cui adottare la versione attuale.",
+    "merge": "Merge",
+    "merged": "Mergiato",
+    "close": "Chiudi",
+    "empty": "Nessuna pull request.",
+    "mergeConfirm": "Mergiare la pull request #{number}? La versione attuale della sorgente sarà adottata come nuova versione."
   }
 }

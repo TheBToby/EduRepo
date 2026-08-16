@@ -15,7 +15,8 @@
     "theme": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "email": "Email"
   },
   "landing": {
     "heroTitle": "Exchange platform for Swiss teachers",
@@ -60,7 +61,7 @@
     "deleteAccountDesc": "Your account will be deactivated and reactivatable for 30 days. You can transfer your materials to another person.",
     "transferTo": "Transfer ownership to (optional email/ID)",
     "changeAvatar": "Change profile picture",
-    "avatarHint": "PNG, JPG, WEBP or GIF – max. 5 MB",
+    "avatarHint": "PNG, JPG, WEBP or GIF – max. 5 MB. Without your own picture, a default profile picture is shown.",
     "avatarUpdated": "Profile picture updated",
     "changePasswordTitle": "Change password",
     "currentPassword": "Current password",
@@ -74,6 +75,41 @@
     "browse": "Browse",
     "profile": "Profile",
     "admin": "Admin"
+  },
+  "teacherProfile": {
+    "sectionTitle": "My teaching job",
+    "sectionHint": "This information appears on your profile and helps other teachers understand you and your materials.",
+    "bio": "Short bio",
+    "jobTitle": "Role / job title",
+    "jobTitlePlaceholder": "e.g. primary teacher, grammar school maths teacher, special needs teacher",
+    "education": "Education",
+    "educationPlaceholder": "e.g. primary teaching diploma (PH Luzern), Master's upper secondary …",
+    "furtherEducation": "Further education",
+    "furtherEducationPlaceholder": "e.g. CAS digital teaching, DaZ certificate …",
+    "schools": "Schools",
+    "schoolsPlaceholder": "e.g. Musterdorf primary school, Beispielstadt grammar school",
+    "subjects": "Subjects / specialisation",
+    "subjectsPlaceholder": "e.g. mathematics, physics, computer science",
+    "schoolLevels": "School levels",
+    "levels": {
+      "KINDERGARTEN": "Kindergarten",
+      "PRIMARY": "Primary",
+      "LOWER_SECONDARY": "Lower secondary",
+      "UPPER_SECONDARY": "Upper secondary",
+      "TERTIARY": "Tertiary"
+    },
+    "educationSector": "Education sector",
+    "sectors": {
+      "GENERAL": "General education",
+      "VOCATIONAL": "Vocational education"
+    },
+    "yearsOfExperience": "Years of teaching experience",
+    "curriculumVitae": "Short CV (quick CV)",
+    "curriculumVitaePlaceholder": "Short CV: stations, focus areas, projects …",
+    "websiteUrl": "Website / portfolio",
+    "listHint": "Separate multiple entries with commas.",
+    "noSelection": "— not specified —",
+    "saved": "Saved"
   },
   "repo": {
     "create": "New material",
@@ -98,7 +134,28 @@
     "ratings": "Ratings",
     "comments": "Comments",
     "addComment": "Write a comment",
-    "reportAbuse": "Report"
+    "reportAbuse": "Report",
+    "backToMine": "Back to my materials",
+    "noVersions": "No versions yet.",
+    "noFiles": "No files in this version.",
+    "learningGoals": "Learning goals",
+    "targetGroup": "Target group",
+    "memberNotice": "As a member you can co-manage this material.",
+    "updated": "Material updated.",
+    "versionCreated": "New version created. Upload files now.",
+    "fileUploaded": "File {name} uploaded.",
+    "star": "Star",
+    "tabOverview": "Overview",
+    "tabFiles": "Files",
+    "tabIssues": "Issues",
+    "tabPrs": "Pull requests",
+    "tabMembers": "Members",
+    "tabChildren": "Sub-materials",
+    "newVersionTitle": "Create new version",
+    "changeNotePlaceholder": "Change note (e.g. “revised chapter 3”)",
+    "newVersion": "Version",
+    "memberUserIdPlaceholder": "Collaborator's user ID",
+    "memberUserIdHint": "You can find the user ID in user administration (admin) or share it directly."
   },
   "admin": {
     "pendingUsers": "Registrations",
@@ -107,6 +164,7 @@
     "users": "Users",
     "lock": "Lock",
     "deactivate": "Deactivate",
+    "activate": "Activate",
     "setRole": "Change role",
     "setQuota": "Storage quota",
     "createUserTitle": "User management",
@@ -115,9 +173,109 @@
     "passwordOptional": "optional",
     "passwordHint": "Without a password, the user cannot log in via email (e.g. OAuth only).",
     "noPending": "No pending registrations.",
-    "actions": "Actions"
+    "actions": "Actions",
+    "status": "Status",
+    "statusUpdated": "Status updated.",
+    "deleteUser": "Delete",
+    "deleteConfirm": "Delete user {name}? The account will be retained for {days} days (retention period) and then permanently deleted.",
+    "deleteScheduled": "Deletion scheduled. Permanent deletion on {date}.",
+    "transferOwnershipPrompt": "Transfer ownership (materials) to user ID (optional, leave empty for no transfer):",
+    "retentionRunning": "Deletion in {days} days",
+    "rejectReasonPrompt": "Reason for rejection (optional):",
+    "userProfile": "User profile",
+    "backToUsers": "Back to user management",
+    "accountData": "Account data",
+    "email": "Email",
+    "role": "Role",
+    "provider": "Sign-in method",
+    "uiLanguage": "Language",
+    "quota": "Storage quota",
+    "createdAt": "Created at",
+    "lastLogin": "Last login",
+    "readOnlyNotice": "This view is read-only. Changes are made via user management or by the user themselves."
   },
   "help": {
     "repoAccess": "Choose “Free download” so everyone can download. Choose “Approval required” to control access per person."
+  },
+  "repoMeta": {
+    "metadataTitle": "Metadata",
+    "noSelection": "— not specified —",
+    "materialType": "Material type",
+    "types": {
+      "worksheet": "Worksheet",
+      "presentation": "Presentation",
+      "quiz": "Quiz",
+      "lessonPlan": "Lesson plan",
+      "reading": "Reading material",
+      "video": "Video",
+      "interactive": "Interactive material",
+      "assessment": "Assessment",
+      "other": "Other"
+    },
+    "educationSector": "Education sector",
+    "sectors": {
+      "GENERAL": "General education",
+      "VOCATIONAL": "Vocational education"
+    },
+    "levels": {
+      "KINDERGARTEN": "Kindergarten",
+      "PRIMARY": "Primary",
+      "LOWER_SECONDARY": "Lower secondary",
+      "UPPER_SECONDARY": "Upper secondary",
+      "TERTIARY": "Tertiary"
+    },
+    "langs": {
+      "DE": "German",
+      "FR": "French",
+      "IT": "Italian",
+      "RM": "Romansh",
+      "EN": "English",
+      "OTHER": "Other"
+    },
+    "curriculum21": "Lehrplan 21 (cycle / competence area)",
+    "curriculum21Placeholder": "e.g. cycle 2, mathematics – size, measurement and functions",
+    "targetGroup": "Target group",
+    "targetGroupPlaceholder": "e.g. 5th grade primary, 3rd secondary",
+    "timeRequired": "Time required",
+    "timeRequiredPlaceholder": "e.g. 2 lessons of 45 min",
+    "difficulty": "Difficulty",
+    "difficultyLevels": {
+      "beginner": "Easy",
+      "intermediate": "Medium",
+      "advanced": "Challenging"
+    },
+    "methodology": "Methodology / didactics",
+    "prerequisites": "Prerequisites",
+    "tags": "Tags",
+    "parentRepo": "Parent material (master)",
+    "noParent": "— no master (standalone) —",
+    "parentRepoHint": "Choose a master material to attach this material as a sub-repository (e.g. year theme → individual lessons).",
+    "subRepoBadge": "Sub",
+    "childrenHint": "Sub-materials are independent materials with their own versioning, subordinated to this master.",
+    "noChildren": "No sub-materials yet. Create a new material and select this one as master."
+  },
+  "repoIssues": {
+    "new": "New issue",
+    "open": "Open",
+    "closed": "Closed",
+    "all": "All",
+    "closeIssue": "Close",
+    "reopenIssue": "Reopen",
+    "empty": "No issues. Report bugs or wishes for collaboration.",
+    "backToList": "Back to issues",
+    "comments": "Comments",
+    "comment": "Comment",
+    "commentPlaceholder": "Your comment …"
+  },
+  "repoPrs": {
+    "new": "New pull request",
+    "hint": "Pull requests bring changes from a sub-material into this material as a new version.",
+    "sourceRepo": "Source (sub-material)",
+    "sourceRepoHint": "Select the sub-material whose current version should be adopted.",
+    "merge": "Merge",
+    "merged": "Merged",
+    "close": "Close",
+    "empty": "No pull requests.",
+    "mergeConfirm": "Merge pull request #{number}? The source's current version will be adopted as a new version."
   }
 }

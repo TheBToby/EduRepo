@@ -79,6 +79,17 @@ enum MemberRole {
   COLLABORATOR
 }
 
+enum IssueStatus {
+  OPEN
+  CLOSED
+}
+
+enum PullRequestStatus {
+  OPEN
+  MERGED
+  CLOSED
+}
+
 enum ReportTargetType {
   RATING
   COMMENT
@@ -114,6 +125,16 @@ model User {
   schoolLevels      SchoolLevel[]  @default([])
   subjects          String[]       @default([])   // Freitext-/Katalog-Fächer
   educationSector   EducationSector?
+
+  // Lehrpersonen-Profil (FA-PROF): Angaben zum Lehrberuf
+  jobTitle          String?        // z. B. "Primarlehrperson", "Gymnasiallehrer Mathematik"
+  education         String?        // Ausbildung (Lehrpatent, PH-Abschluss, Master …)
+  furtherEducation  String?        // Fort-/Weiterbildungen
+  schools           String[]       @default([])   // Schulen, an denen unterrichtet wird/wurde
+  curriculumVitae   String?        // Kurzer Lebenslauf (Quick-CV)
+  yearsOfExperience Int?           // Jahre Unterrichtserfahrung
+  websiteUrl        String?        // Persönliche Website / Portfolio
+
   provider          AuthProvider   @default(EMAIL)
   providerId        String?        // Externe ID bei OAuth
 
@@ -135,6 +156,11 @@ model User {
   auditLogs         AuditLog[]
   tokens            Token[]
   notifications     Notification[]
+  stars             RepoStar[]
+  issues            RepoIssue[]
+  issueComments     RepoIssueComment[]
+  pullRequests      RepoPullRequest[]
+  mergedPullRequests RepoPullRequest[] @relation("PRMerger")
 
   @@index([status])
   @@index([role])
@@ -209,6 +235,11 @@ model Repository {
   forkedFrom     Repository?      @relation("ForkSource", fields: [forkedFromId], references: [id])
   forks          Repository[]     @relation("ForkSource")
 
+  // Hierarchie: Master-Repository (parent) mit Sub-Repositories (children)
+  parentId       String?
+  parent         Repository?      @relation("RepoHierarchy", fields: [parentId], references: [id])
+  children       Repository[]     @relation("RepoHierarchy")
+
   ownerId        String
   owner          User             @relation("OwnerRepositories", fields: [ownerId], references: [id])
   members        RepositoryMember[]
@@ -216,6 +247,10 @@ model Repository {
   tags           RepositoryTag[]
   ratings        Rating[]
   comments       Comment[]
+  issues         RepoIssue[]
+  pullRequestsTo RepoPullRequest[] @relation("PRTarget")
+  pullRequestsFrom RepoPullRequest[] @relation("PRSource")
+  stars          RepoStar[]
 
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -225,6 +260,7 @@ model Repository {
   @@index([subjectId])
   @@index([schoolLevel])
   @@index([contentLanguage])
+  @@index([parentId])
   @@map("repositories")
 }
 
@@ -286,6 +322,77 @@ model FileAsset {
 }
 
 // ---------------------------------------------------------------------------
+// Issues & Pull Requests (GitHub-ähnliche Zusammenarbeit)
+// ---------------------------------------------------------------------------
+
+model RepoIssue {
+  id           String      @id @default(uuid())
+  repositoryId String
+  repository   Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User        @relation(fields: [authorId], references: [id])
+  number       Int         // fortlaufende Nummer pro Repository
+  title        String
+  description  String?
+  status       IssueStatus @default(OPEN)
+  labels       String[]    @default([])
+  assigneeId   String?
+  comments     RepoIssueComment[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  @@unique([repositoryId, number])
+  @@index([repositoryId, status])
+  @@map("repo_issues")
+}
+
+model RepoIssueComment {
+  id        String    @id @default(uuid())
+  issueId   String
+  issue     RepoIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id])
+  text      String
+  createdAt DateTime  @default(now())
+  @@index([issueId])
+  @@map("repo_issue_comments")
+}
+
+model RepoPullRequest {
+  id              String            @id @default(uuid())
+  // Ziel (= Repository, in das gemergt wird) und Quelle (= Sub-Repo/Fork)
+  targetRepoId    String
+  targetRepo      Repository        @relation("PRTarget", fields: [targetRepoId], references: [id], onDelete: Cascade)
+  sourceRepoId    String
+  sourceRepo      Repository        @relation("PRSource", fields: [sourceRepoId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User              @relation(fields: [authorId], references: [id])
+  number          Int               // fortlaufende Nummer pro Ziel-Repository
+  title           String
+  description     String?
+  status          PullRequestStatus @default(OPEN)
+  changeNote      String?           // Versions-Kommentar beim Merge
+  mergedById      String?
+  mergedBy        User?             @relation("PRMerger", fields: [mergedById], references: [id])
+  mergedAt        DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  @@unique([targetRepoId, number])
+  @@index([targetRepoId, status])
+  @@map("repo_pull_requests")
+}
+
+// Sterne/Watch (Reaktion auf Lehrmittel, GitHub-Star-ähnlich)
+model RepoStar {
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repositoryId String
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  @@id([userId, repositoryId])
+  @@map("repo_stars")
+}
+
+// ---------------------------------------------------------------------------
 // Bewertungen & Kommentare (FA-RATE)
 // ---------------------------------------------------------------------------
 
@@ -317,7 +424,7 @@ model Comment {
   repositoryId String
   repository   Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
   userId       String
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   parentId     String?
   parent       Comment?    @relation("CommentReplies", fields: [parentId], references: [id])
   replies      Comment[]   @relation("CommentReplies")

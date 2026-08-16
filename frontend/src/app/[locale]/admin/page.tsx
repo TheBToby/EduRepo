@@ -1,11 +1,13 @@
 'use client';
 
 // Admin-Bereich: Nutzer direkt anlegen (ohne Registrierungsanfrage),
-// Registrierungen freigeben und Nutzer verwalten.
+// Registrierungen freigeben und Nutzer verwalten (aktivieren, sperren,
+// deaktivieren, löschen mit Kulanzfrist, Profil einsehen).
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '../../../lib/api';
+import { Link } from '../../../i18n/navigation';
 
 type User = {
   id: string;
@@ -14,7 +16,34 @@ type User = {
   role: string;
   status: string;
   createdAt: string;
+  deletedAt?: string | null;
+  permanentDeleteAt?: string | null;
 };
+
+/** Verbleibende Kulanzfrist (Tage); null wenn keine läuft. */
+function retentionDaysLeft(permanentDeleteAt?: string | null): number | null {
+  if (!permanentDeleteAt) return null;
+  const diff = new Date(permanentDeleteAt).getTime() - Date.now();
+  return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
+}
+
+/** Farbklasse für Status-Badges inkl. laufender Kulanzfrist. */
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case 'ACTIVE':
+      return 'bg-green-100 text-green-700';
+    case 'PENDING':
+      return 'bg-blue-100 text-blue-700';
+    case 'SOFT_DELETED':
+      return 'bg-red-100 text-red-700';
+    case 'LOCKED':
+      return 'bg-orange-100 text-orange-700';
+    case 'DEACTIVATED':
+      return 'bg-gray-200 text-gray-700';
+    default:
+      return 'bg-[rgb(var(--muted))]';
+  }
+}
 
 export default function AdminPage() {
   const t = useTranslations('admin');
@@ -24,6 +53,7 @@ export default function AdminPage() {
   const [pending, setPending] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   // Formular: neuen Nutzer anlegen
   const [showCreate, setShowCreate] = useState(false);
@@ -82,14 +112,44 @@ export default function AdminPage() {
   };
 
   const reject = async (id: string) => {
-    const reason = window.prompt('Grund der Ablehnung (optional):', '');
+    const reason = window.prompt(t('rejectReasonPrompt'), '');
+    if (reason === null) return;
     await api.post(`/users/${id}/reject`, { reason });
     load();
   };
 
   const setStatus = async (id: string, status: string) => {
-    await api.patch(`/users/${id}/status`, { status });
-    load();
+    setBusyId(id);
+    try {
+      await api.patch(`/users/${id}/status`, { status });
+      load();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const deleteUserWithRetention = async (u: User) => {
+    const confirmed = window.confirm(
+      t('deleteConfirm', { name: u.displayName, days: 30 }),
+    );
+    if (!confirmed) return;
+    const transfer = window.prompt(t('transferOwnershipPrompt'), '');
+    if (transfer === null) return;
+    setBusyId(u.id);
+    try {
+      const res = await api.delete<{ permanentDeleteAt: string }>(`/users/${u.id}`, {
+        retentionDays: 30,
+        ...(transfer ? { transferToUserId: transfer } : {}),
+      });
+      alert(t('deleteScheduled', { date: new Date(res.permanentDeleteAt).toLocaleDateString() }));
+      load();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const changeRole = async (id: string, role: string) => {
@@ -206,57 +266,96 @@ export default function AdminPage() {
                 <th className="py-2">{tAuth('registerName')}</th>
                 <th className="py-2">{tAuth('registerEmail')}</th>
                 <th className="py-2">{t('setRole')}</th>
-                <th className="py-2">Status</th>
+                <th className="py-2">{t('status')}</th>
                 <th className="py-2">{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-b border-[rgb(var(--border))]/50">
-                  <td className="py-2">{u.displayName}</td>
-                  <td className="py-2">{u.email}</td>
-                  <td className="py-2">
-                    {u.role === 'ADMIN' ? (
-                      u.role
-                    ) : (
-                      <select
-                        className="input py-1 text-xs"
-                        value={u.role}
-                        onChange={(e) => changeRole(u.id, e.target.value)}
+              {users.map((u) => {
+                const retention = retentionDaysLeft(u.permanentDeleteAt);
+                return (
+                  <tr key={u.id} className="border-b border-[rgb(var(--border))]/50">
+                    {/* Klick auf Name => Profil des Nutzers */}
+                    <td className="py-2">
+                      <Link
+                        href={`/admin/users/${u.id}`}
+                        className="font-medium text-brand-600 hover:underline"
                       >
-                        <option value="USER">USER</option>
-                        <option value="MODERATOR">MODERATOR</option>
-                        <option value="ADMIN">ADMIN</option>
-                      </select>
-                    )}
-                  </td>
-                  <td className="py-2">
-                    <span className={`rounded px-2 py-1 text-xs ${
-                      u.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-[rgb(var(--muted))]'
-                    }`}>
-                      {u.status}
-                    </span>
-                  </td>
-                  <td className="py-2">
-                    {u.role !== 'ADMIN' && (
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => setStatus(u.id, 'LOCKED')}
-                          className="rounded bg-[rgb(var(--muted))] px-2 py-1 text-xs hover:opacity-80"
+                        {u.displayName}
+                      </Link>
+                    </td>
+                    <td className="py-2">{u.email}</td>
+                    <td className="py-2">
+                      {u.role === 'ADMIN' ? (
+                        u.role
+                      ) : (
+                        <select
+                          className="input py-1 text-xs"
+                          value={u.role}
+                          onChange={(e) => changeRole(u.id, e.target.value)}
                         >
-                          {t('lock')}
-                        </button>
-                        <button
-                          onClick={() => setStatus(u.id, 'DEACTIVATED')}
-                          className="rounded bg-[rgb(var(--muted))] px-2 py-1 text-xs hover:opacity-80"
-                        >
-                          {t('deactivate')}
-                        </button>
+                          <option value="USER">USER</option>
+                          <option value="MODERATOR">MODERATOR</option>
+                          <option value="ADMIN">ADMIN</option>
+                        </select>
+                      )}
+                    </td>
+                    <td className="py-2">
+                      <div className="flex flex-col gap-1">
+                        <span className={`rounded px-2 py-1 text-xs ${statusBadgeClass(u.status)}`}>
+                          {u.status}
+                        </span>
+                        {/* Laufende Kulanzfrist anzeigen */}
+                        {retention !== null && (
+                          <span className="rounded bg-red-100 px-2 py-1 text-xs text-red-700">
+                            ⏳ {t('retentionRunning', { days: retention })}
+                          </span>
+                        )}
                       </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="py-2">
+                      {u.role !== 'ADMIN' && (
+                        <div className="flex flex-wrap gap-1">
+                          {(u.status === 'DEACTIVATED' || u.status === 'LOCKED') && (
+                            <button
+                              onClick={() => setStatus(u.id, 'ACTIVE')}
+                              className="rounded bg-green-100 px-2 py-1 text-xs text-green-700 hover:opacity-80"
+                              disabled={busyId === u.id}
+                            >
+                              ✓ {t('activate')}
+                            </button>
+                          )}
+                          {u.status === 'ACTIVE' && (
+                            <>
+                              <button
+                                onClick={() => setStatus(u.id, 'LOCKED')}
+                                className="rounded bg-[rgb(var(--muted))] px-2 py-1 text-xs hover:opacity-80"
+                                disabled={busyId === u.id}
+                              >
+                                🔒 {t('lock')}
+                              </button>
+                              <button
+                                onClick={() => setStatus(u.id, 'DEACTIVATED')}
+                                className="rounded bg-[rgb(var(--muted))] px-2 py-1 text-xs hover:opacity-80"
+                                disabled={busyId === u.id}
+                              >
+                                ⏸ {t('deactivate')}
+                              </button>
+                              <button
+                                onClick={() => deleteUserWithRetention(u)}
+                                className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:opacity-80"
+                                disabled={busyId === u.id}
+                              >
+                                🗑 {t('deleteUser')}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -15,7 +15,8 @@
     "theme": "Design",
     "light": "Hell",
     "dark": "Dunkel",
-    "system": "System"
+    "system": "System",
+    "email": "E-Mail"
   },
   "landing": {
     "heroTitle": "Austauschplattform für Schweizer Lehrpersonen",
@@ -60,7 +61,7 @@
     "deleteAccountDesc": "Dein Konto wird 30 Tage reaktivierbar deaktiviert. Du kannst deine Lehrmittel an eine andere Person übergeben.",
     "transferTo": "Eigentum übertragen an (optionale E-Mail/ID)",
     "changeAvatar": "Profilbild ändern",
-    "avatarHint": "PNG, JPG, WEBP oder GIF – max. 5 MB",
+    "avatarHint": "PNG, JPG, WEBP oder GIF – max. 5 MB. Ohne eigenes Bild wird ein Standard-Profilbild angezeigt.",
     "avatarUpdated": "Profilbild aktualisiert",
     "changePasswordTitle": "Passwort ändern",
     "currentPassword": "Aktuelles Passwort",
@@ -74,6 +75,41 @@
     "browse": "Entdecken",
     "profile": "Profil",
     "admin": "Verwaltung"
+  },
+  "teacherProfile": {
+    "sectionTitle": "Mein Lehrberuf",
+    "sectionHint": "Diese Angaben erscheinen in deinem Profil und helfen anderen Lehrpersonen, dich und deine Materialien einzuordnen.",
+    "bio": "Kurzbeschreibung",
+    "jobTitle": "Funktion / Berufsbezeichnung",
+    "jobTitlePlaceholder": "z. B. Primarlehrperson, Gymnasiallehrer Mathematik, Heilpädagogin",
+    "education": "Ausbildung",
+    "educationPlaceholder": "z. B. Lehrpatent Primarstufe (PH Luzern), Master Sekundarstufe II …",
+    "furtherEducation": "Fort-/Weiterbildung",
+    "furtherEducationPlaceholder": "z. B. CAS Digitalisierung im Unterricht, DaZ-Zertifikat …",
+    "schools": "Schulen",
+    "schoolsPlaceholder": "z. B. Primarschule Musterdorf, Gymnasium Beispielstadt",
+    "subjects": "Fächer / Fachspezialisierung",
+    "subjectsPlaceholder": "z. B. Mathematik, Physik, Informatik",
+    "schoolLevels": "Schulstufen",
+    "levels": {
+      "KINDERGARTEN": "Kindergarten",
+      "PRIMARY": "Primarstufe",
+      "LOWER_SECONDARY": "Sekundarstufe I",
+      "UPPER_SECONDARY": "Sekundarstufe II",
+      "TERTIARY": "Tertiärstufe"
+    },
+    "educationSector": "Bildungsbereich",
+    "sectors": {
+      "GENERAL": "Allgemeinbildend",
+      "VOCATIONAL": "Berufsbildung"
+    },
+    "yearsOfExperience": "Jahre Unterrichtserfahrung",
+    "curriculumVitae": "Kurzer Lebenslauf (Quick-CV)",
+    "curriculumVitaePlaceholder": "Kurzer Lebenslauf: Stationen, Schwerpunkte, Projekte …",
+    "websiteUrl": "Website / Portfolio",
+    "listHint": "Mehrere Einträge mit Komma trennen.",
+    "noSelection": "— keine Angabe —",
+    "saved": "Gespeichert"
   },
   "repo": {
     "create": "Neues Lehrmittel",
@@ -98,7 +134,28 @@
     "ratings": "Bewertungen",
     "comments": "Kommentare",
     "addComment": "Kommentar schreiben",
-    "reportAbuse": "Melden"
+    "reportAbuse": "Melden",
+    "backToMine": "Zurück zu meinen Lehrmitteln",
+    "noVersions": "Noch keine Versionen.",
+    "noFiles": "Keine Dateien in dieser Version.",
+    "learningGoals": "Lernziele",
+    "targetGroup": "Zielgruppe",
+    "memberNotice": "Als Mitglied kannst du dieses Lehrmittel mitverwalten.",
+    "updated": "Lehrmittel aktualisiert.",
+    "versionCreated": "Neue Version erstellt. Lade jetzt Dateien hoch.",
+    "fileUploaded": "Datei {name} hochgeladen.",
+    "star": "Merken (Stern)",
+    "tabOverview": "Übersicht",
+    "tabFiles": "Dateien",
+    "tabIssues": "Issues",
+    "tabPrs": "Pull Requests",
+    "tabMembers": "Mitglieder",
+    "tabChildren": "Sub-Lehrmittel",
+    "newVersionTitle": "Neue Version erstellen",
+    "changeNotePlaceholder": "Änderungsnotiz (z. B. „Kapitel 3 überarbeitet“)",
+    "newVersion": "Version",
+    "memberUserIdPlaceholder": "Nutzer-ID des Mitarbeiters",
+    "memberUserIdHint": "Die Nutzer-ID findest du in der Nutzerverwaltung (Admin) oder teilst sie dir direkt mit."
   },
   "admin": {
     "pendingUsers": "Registrierungen",
@@ -107,6 +164,7 @@
     "users": "Nutzer",
     "lock": "Sperren",
     "deactivate": "Deaktivieren",
+    "activate": "Aktivieren",
     "setRole": "Rolle ändern",
     "setQuota": "Speicherkontingent",
     "createUserTitle": "Nutzerverwaltung",
@@ -115,9 +173,109 @@
     "passwordOptional": "optional",
     "passwordHint": "Ohne Passwort kann der Nutzer sich nicht per E-Mail anmelden (z. B. nur OAuth).",
     "noPending": "Keine ausstehenden Registrierungen.",
-    "actions": "Aktionen"
+    "actions": "Aktionen",
+    "status": "Status",
+    "statusUpdated": "Status aktualisiert.",
+    "deleteUser": "Löschen",
+    "deleteConfirm": "Nutzer {name} löschen? Das Konto wird {days} Tage aufbewahrt (Kulanzfrist) und danach endgültig gelöscht.",
+    "deleteScheduled": "Löschung geplant. Endgültige Löschung am {date}.",
+    "transferOwnershipPrompt": "Eigentum (Lehrmittel) übertragen an Nutzer-ID (optional, leer lassen für keine Übertragung):",
+    "retentionRunning": "Löschung in {days} Tagen",
+    "rejectReasonPrompt": "Grund der Ablehnung (optional):",
+    "userProfile": "Nutzerprofil",
+    "backToUsers": "Zurück zur Nutzerverwaltung",
+    "accountData": "Stammdaten",
+    "email": "E-Mail",
+    "role": "Rolle",
+    "provider": "Anmeldeart",
+    "uiLanguage": "Sprache",
+    "quota": "Speicherkontingent",
+    "createdAt": "Erstellt am",
+    "lastLogin": "Letzte Anmeldung",
+    "readOnlyNotice": "Diese Ansicht ist schreibgeschützt. Änderungen erfolgen über die Nutzerverwaltung oder durch den Nutzer selbst."
   },
   "help": {
     "repoAccess": "Wähle „Frei herunterladbar“, damit alle Nutzer das Lehrmittel herunterladen können. Wähle „Freigabe nötig“, wenn du den Zugriff pro Person steuern möchtest."
+  },
+  "repoMeta": {
+    "metadataTitle": "Metadaten",
+    "noSelection": "— keine Angabe —",
+    "materialType": "Art des Materials",
+    "types": {
+      "worksheet": "Arbeitsblatt",
+      "presentation": "Präsentation",
+      "quiz": "Quiz",
+      "lessonPlan": "Lektionplan",
+      "reading": "Lektüre/Lesetext",
+      "video": "Video",
+      "interactive": "Interaktives Material",
+      "assessment": "Lernzielkontrolle",
+      "other": "Sonstiges"
+    },
+    "educationSector": "Bildungsbereich",
+    "sectors": {
+      "GENERAL": "Allgemeinbildend",
+      "VOCATIONAL": "Berufsbildung"
+    },
+    "levels": {
+      "KINDERGARTEN": "Kindergarten",
+      "PRIMARY": "Primarstufe",
+      "LOWER_SECONDARY": "Sekundarstufe I",
+      "UPPER_SECONDARY": "Sekundarstufe II",
+      "TERTIARY": "Tertiärstufe"
+    },
+    "langs": {
+      "DE": "Deutsch",
+      "FR": "Französisch",
+      "IT": "Italienisch",
+      "RM": "Rätoromanisch",
+      "EN": "Englisch",
+      "OTHER": "Andere"
+    },
+    "curriculum21": "Lehrplan 21 (Zyklus / Kompetenzbereich)",
+    "curriculum21Placeholder": "z. B. Zyklus 2, Mathematik – Grösse, Mess und Funktionen",
+    "targetGroup": "Zielgruppe",
+    "targetGroupPlaceholder": "z. B. 5. Klasse Primarschule, 3. Sek",
+    "timeRequired": "Zeitaufwand",
+    "timeRequiredPlaceholder": "z. B. 2 Lektionen à 45 Min",
+    "difficulty": "Schwierigkeit",
+    "difficultyLevels": {
+      "beginner": "Einfach",
+      "intermediate": "Mittel",
+      "advanced": "Anspruchsvoll"
+    },
+    "methodology": "Methodik / Didaktik",
+    "prerequisites": "Voraussetzungen",
+    "tags": "Schlagwörter (Tags)",
+    "parentRepo": "Übergeordnetes Lehrmittel (Master)",
+    "noParent": "— kein Master (eigenständig) —",
+    "parentRepoHint": "Wähle ein Master-Lehrmittel, um dieses Material als Sub-Repository einzuhängen (z. B. Jahrsthema → einzelne Lektionen).",
+    "subRepoBadge": "Sub",
+    "childrenHint": "Sub-Lehrmittel sind eigenständige Lehrmittel mit eigener Versionierung, die diesem Master untergeordnet sind.",
+    "noChildren": "Noch keine Sub-Lehrmittel. Erstelle ein neues Lehrmittel und wähle dieses als Master."
+  },
+  "repoIssues": {
+    "new": "Neues Issue",
+    "open": "Offen",
+    "closed": "Geschlossen",
+    "all": "Alle",
+    "closeIssue": "Schliessen",
+    "reopenIssue": "Erneut öffnen",
+    "empty": "Keine Issues. Melde Fehler oder Wünsche für die Zusammenarbeit.",
+    "backToList": "Zurück zu den Issues",
+    "comments": "Kommentare",
+    "comment": "Kommentieren",
+    "commentPlaceholder": "Dein Kommentar …"
+  },
+  "repoPrs": {
+    "new": "Neuer Pull Request",
+    "hint": "Pull Requests übernehmen Änderungen aus einem Sub-Lehrmittel als neue Version in dieses Lehrmittel.",
+    "sourceRepo": "Quelle (Sub-Lehrmittel)",
+    "sourceRepoHint": "Wähle das Sub-Lehrmittel, dessen aktuelle Version übernommen werden soll.",
+    "merge": "Mergen",
+    "merged": "Gemerged",
+    "close": "Schliessen",
+    "empty": "Keine Pull Requests.",
+    "mergeConfirm": "Pull Request #{number} mergen? Die aktuelle Version der Quelle wird als neue Version übernommen."
   }
 }

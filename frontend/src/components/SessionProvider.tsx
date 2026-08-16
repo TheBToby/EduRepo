@@ -15,11 +15,15 @@ export type SessionUser = {
 
 /**
  * Avatar-URL fuer <img src> aufloesen. Interne Keys ("avatar:<key>") werden
- * auf den stabilen Backend-Endpunkt /api/users/me/avatar gemappt.
+ * auf den stabilen Backend-Endpunkt /api/users/me/avatar gemappt. Fuer
+ * Fremd-Avatare (z. B. Admin-Ansicht) kann ein abweichender Endpunkt
+ * uebergeben werden (z. B. "/api/users/<id>/avatar").
  */
-export function avatarSrc(avatarUrl?: string | null): string | null {
+export function avatarSrc(avatarUrl?: string | null, endpoint?: string): string | null {
   if (!avatarUrl) return null;
-  if (avatarUrl.startsWith('avatar:')) return '/api/users/me/avatar';
+  if (avatarUrl.startsWith('avatar:')) {
+    return endpoint ? `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}` : '/api/users/me/avatar';
+  }
   return avatarUrl;
 }
 

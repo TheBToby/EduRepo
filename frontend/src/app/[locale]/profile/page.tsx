@@ -1,12 +1,16 @@
 'use client';
 
-// Profilseite: Profildaten, Profilbild-Upload und Passwortwechsel.
+// Profilseite: Profildaten, Profilbild-Upload, Angaben zum Lehrberuf
+// (Ausbildung, Schulen, Kurz-CV, Fächer …) und Passwortwechsel.
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { api, ApiError } from '../../../lib/api';
-import { useSession, avatarSrc } from '../../../components/SessionProvider';
+import { useSession } from '../../../components/SessionProvider';
+import { Avatar } from '../../../components/Avatar';
+
+const SCHOOL_LEVELS = ['KINDERGARTEN', 'PRIMARY', 'LOWER_SECONDARY', 'UPPER_SECONDARY', 'TERTIARY'] as const;
 
 type Profile = {
   id: string;
@@ -16,12 +20,24 @@ type Profile = {
   avatarUrl?: string;
   uiLanguage: 'DE' | 'FR' | 'IT' | 'EN';
   themePreference: 'LIGHT' | 'DARK' | 'SYSTEM';
+  // Lehrberuf
+  jobTitle?: string;
+  education?: string;
+  furtherEducation?: string;
+  schools?: string[];
+  curriculumVitae?: string;
+  yearsOfExperience?: number | null;
+  websiteUrl?: string;
+  subjects?: string[];
+  schoolLevels?: string[];
+  educationSector?: 'GENERAL' | 'VOCATIONAL' | null;
 };
 
 export default function ProfilePage() {
   const t = useTranslations('auth');
   const tNav = useTranslations('nav');
   const tCommon = useTranslations('common');
+  const tProfile = useTranslations('teacherProfile');
   const router = useRouter();
   const { setTheme } = useTheme();
   const { refresh } = useSession();
@@ -61,6 +77,17 @@ export default function ProfilePage() {
       bio: profile.bio,
       uiLanguage: profile.uiLanguage,
       themePreference: profile.themePreference,
+      // Angaben zum Lehrberuf
+      jobTitle: profile.jobTitle || undefined,
+      education: profile.education || undefined,
+      furtherEducation: profile.furtherEducation || undefined,
+      schools: profile.schools || [],
+      curriculumVitae: profile.curriculumVitae || undefined,
+      yearsOfExperience: profile.yearsOfExperience ?? undefined,
+      websiteUrl: profile.websiteUrl || undefined,
+      subjects: profile.subjects || [],
+      schoolLevels: profile.schoolLevels || [],
+      educationSector: profile.educationSector || undefined,
     });
     // Theme sofort anwenden
     setTheme(profile.themePreference.toLowerCase());
@@ -117,29 +144,26 @@ export default function ProfilePage() {
   };
 
   if (error) return <p className="text-red-600">{error}</p>;
-  if (!profile) return <p>Lädt…</p>;
+  if (!profile) return <p>{tCommon('loading')}</p>;
 
-  const initials = (profile.displayName || profile.email)
-    .split(' ')
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
+  const toggleSchoolLevel = (level: string) => {
+    setProfile((p) => {
+      if (!p) return p;
+      const current = p.schoolLevels || [];
+      const next = current.includes(level)
+        ? current.filter((l) => l !== level)
+        : [...current, level];
+      return { ...p, schoolLevels: next };
+    });
+  };
 
   return (
-    <div className="mx-auto max-w-lg space-y-10">
+    <div className="mx-auto max-w-2xl space-y-10">
       <h1 className="text-2xl font-bold">{tNav('profile')}</h1>
 
-      {/* --- Profilbild --- */}
+      {/* --- Profilbild (mit Standardbild, falls keines hochgeladen) --- */}
       <section className="flex items-center gap-5">
-        {avatarSrc(profile.avatarUrl) ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarSrc(profile.avatarUrl) as string} alt="" className="h-20 w-20 rounded-full object-cover" />
-        ) : (
-          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-600 text-2xl font-bold text-white">
-            {initials}
-          </span>
-        )}
+        <Avatar avatarUrl={profile.avatarUrl} name={profile.displayName || profile.email} size={80} />
         <div>
           <input
             ref={fileInputRef}
@@ -176,7 +200,7 @@ export default function ProfilePage() {
             <input className="input opacity-70" value={profile.email} disabled />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Bio</label>
+            <label className="mb-1 block text-sm font-medium">{tProfile('bio')}</label>
             <textarea
               className="input"
               rows={3}
@@ -209,7 +233,151 @@ export default function ProfilePage() {
               <option value="SYSTEM">{tCommon('system')}</option>
             </select>
           </div>
-          {saved && <p className="text-sm text-green-600">✓ Gespeichert</p>}
+          {saved && <p className="text-sm text-green-600">✓ {tProfile('saved')}</p>}
+          <button type="submit" className="btn-primary w-full">{tCommon('save')}</button>
+        </form>
+      </section>
+
+      {/* --- Angaben zum Lehrberuf --- */}
+      <section className="border-t border-[rgb(var(--border))] pt-6">
+        <h2 className="mb-1 font-semibold">{tProfile('sectionTitle')}</h2>
+        <p className="mb-4 text-sm text-[rgb(var(--foreground))]/60">{tProfile('sectionHint')}</p>
+        <form onSubmit={save} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium">{tProfile('jobTitle')}</label>
+            <input
+              className="input"
+              placeholder={tProfile('jobTitlePlaceholder')}
+              value={profile.jobTitle || ''}
+              onChange={(e) => setProfile({ ...profile, jobTitle: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{tProfile('education')}</label>
+            <textarea
+              className="input"
+              rows={2}
+              placeholder={tProfile('educationPlaceholder')}
+              value={profile.education || ''}
+              onChange={(e) => setProfile({ ...profile, education: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{tProfile('furtherEducation')}</label>
+            <textarea
+              className="input"
+              rows={2}
+              placeholder={tProfile('furtherEducationPlaceholder')}
+              value={profile.furtherEducation || ''}
+              onChange={(e) => setProfile({ ...profile, furtherEducation: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{tProfile('schools')}</label>
+            <textarea
+              className="input"
+              rows={2}
+              placeholder={tProfile('schoolsPlaceholder')}
+              value={(profile.schools || []).join(', ')}
+              onChange={(e) =>
+                setProfile({
+                  ...profile,
+                  schools: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
+                })
+              }
+            />
+            <p className="mt-1 text-xs text-[rgb(var(--foreground))]/50">{tProfile('listHint')}</p>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{tProfile('subjects')}</label>
+            <textarea
+              className="input"
+              rows={2}
+              placeholder={tProfile('subjectsPlaceholder')}
+              value={(profile.subjects || []).join(', ')}
+              onChange={(e) =>
+                setProfile({
+                  ...profile,
+                  subjects: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
+                })
+              }
+            />
+            <p className="mt-1 text-xs text-[rgb(var(--foreground))]/50">{tProfile('listHint')}</p>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{tProfile('schoolLevels')}</label>
+            <div className="flex flex-wrap gap-2">
+              {SCHOOL_LEVELS.map((level) => {
+                const active = (profile.schoolLevels || []).includes(level);
+                return (
+                  <button
+                    type="button"
+                    key={level}
+                    onClick={() => toggleSchoolLevel(level)}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                      active
+                        ? 'bg-brand-600 text-white'
+                        : 'bg-[rgb(var(--muted))] text-[rgb(var(--foreground))]/70 hover:opacity-80'
+                    }`}
+                  >
+                    {tProfile(`levels.${level}`)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{tProfile('educationSector')}</label>
+            <select
+              className="input"
+              value={profile.educationSector || ''}
+              onChange={(e) =>
+                setProfile({ ...profile, educationSector: (e.target.value || undefined) as any })
+              }
+            >
+              <option value="">{tProfile('noSelection')}</option>
+              <option value="GENERAL">{tProfile('sectors.GENERAL')}</option>
+              <option value="VOCATIONAL">{tProfile('sectors.VOCATIONAL')}</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{tProfile('yearsOfExperience')}</label>
+            <input
+              type="number"
+              min={0}
+              max={80}
+              className="input"
+              placeholder="10"
+              value={profile.yearsOfExperience ?? ''}
+              onChange={(e) =>
+                setProfile({
+                  ...profile,
+                  yearsOfExperience: e.target.value === '' ? null : parseInt(e.target.value, 10),
+                })
+              }
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{tProfile('curriculumVitae')}</label>
+            <textarea
+              className="input"
+              rows={5}
+              placeholder={tProfile('curriculumVitaePlaceholder')}
+              value={profile.curriculumVitae || ''}
+              onChange={(e) => setProfile({ ...profile, curriculumVitae: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{tProfile('websiteUrl')}</label>
+            <input
+              type="url"
+              className="input"
+              placeholder="https://…"
+              value={profile.websiteUrl || ''}
+              onChange={(e) => setProfile({ ...profile, websiteUrl: e.target.value })}
+            />
+          </div>
+          {saved && <p className="text-sm text-green-600">✓ {tProfile('saved')}</p>}
           <button type="submit" className="btn-primary w-full">{tCommon('save')}</button>
         </form>
       </section>

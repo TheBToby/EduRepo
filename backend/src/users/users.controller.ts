@@ -3,6 +3,7 @@ import {
   Get,
   Patch,
   Post,
+  Delete,
   Body,
   Param,
   UseGuards,
@@ -20,7 +21,7 @@ import { RolesGuard } from '../common/roles.guard';
 import { Roles } from '../common/roles.decorator';
 import { CurrentUser, RequestUser } from '../common/current-user.decorator';
 import { AccountStatus, UserRole } from '@prisma/client';
-import { IsString, IsOptional, IsEnum, IsInt, Min, IsArray, IsEmail, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsInt, Min, Max, IsArray, IsEmail, MinLength } from 'class-validator';
 
 class UpdateProfileDto {
   @IsOptional() @IsString() displayName?: string;
@@ -31,6 +32,14 @@ class UpdateProfileDto {
   @IsOptional() @IsArray() schoolLevels?: any[];
   @IsOptional() @IsArray() subjects?: string[];
   @IsOptional() @IsEnum(['GENERAL', 'VOCATIONAL']) educationSector?: 'GENERAL' | 'VOCATIONAL';
+  // Lehrpersonen-Profil (FA-PROF)
+  @IsOptional() @IsString() jobTitle?: string;
+  @IsOptional() @IsString() education?: string;
+  @IsOptional() @IsString() furtherEducation?: string;
+  @IsOptional() @IsArray() schools?: string[];
+  @IsOptional() @IsString() curriculumVitae?: string;
+  @IsOptional() @IsInt() @Min(0) @Max(80) yearsOfExperience?: number;
+  @IsOptional() @IsString() websiteUrl?: string;
 }
 
 class StatusDto {
@@ -44,6 +53,11 @@ class RoleDto {
 
 class QuotaDto {
   @IsInt() @Min(0) quotaBytes: number;
+}
+
+class DeleteUserDto {
+  @IsOptional() @IsInt() @Min(1) @Max(365) retentionDays?: number;
+  @IsOptional() @IsString() transferToUserId?: string;
 }
 
 class CreateByAdminDto {
@@ -143,6 +157,25 @@ export class UsersController {
     return this.users.rejectRegistration(id, user.id, reason);
   }
 
+  // Profil eines Nutzers einsehen (Admin/Moderator – Klick auf den Nutzernamen)
+  @Get(':id/profile')
+  @UseGuards(RolesGuard)
+  @Roles('MODERATOR', 'ADMIN')
+  getProfile(@Param('id') id: string) {
+    return this.users.getProfileById(id);
+  }
+
+  // Avatar eines Nutzers ausliefern (Admin/Moderator-Ansicht)
+  @Get(':id/avatar')
+  @UseGuards(RolesGuard)
+  @Roles('MODERATOR', 'ADMIN')
+  async getUserAvatar(@Param('id') id: string, @Res({ passthrough: true }) res: any) {
+    const avatar = await this.users.getAvatarById(id);
+    if (!avatar) throw new NotFoundException('Kein Profilbild vorhanden.');
+    res.set({ 'Content-Type': avatar.mimeType, 'Cache-Control': 'private, max-age=60' });
+    return new StreamableFile(avatar.buffer);
+  }
+
   @Patch(':id/status')
   @UseGuards(RolesGuard)
   @Roles('MODERATOR', 'ADMIN')
@@ -152,6 +185,19 @@ export class UsersController {
     @CurrentUser() user: RequestUser,
   ) {
     return this.users.setStatus(id, dto.status as AccountStatus, user.id, dto.reason);
+  }
+
+  // Löschen mit Kulanzfrist: Nutzer wird deaktiviert und nach Ablauf der
+  // Frist endgültig gelöscht (FA-AUTH-007). Optional Eigentum übertragen.
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
+  deleteUser(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: DeleteUserDto,
+  ) {
+    return this.users.deleteWithRetention(id, user.id, dto?.retentionDays ?? 30, dto?.transferToUserId);
   }
 
   @Patch(':id/role')

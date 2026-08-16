@@ -81,7 +81,8 @@ export const api = {
     apiFetch<T>(path, { ...(opts || {}), method: 'POST', body }),
   patch: <T = any>(path: string, body?: any, opts?: FetchOpts) =>
     apiFetch<T>(path, { ...(opts || {}), method: 'PATCH', body }),
-  delete: <T = any>(path: string, opts?: FetchOpts) => apiFetch<T>(path, { ...(opts || {}), method: 'DELETE' }),
+  delete: <T = any>(path: string, body?: any, opts?: FetchOpts) =>
+    apiFetch<T>(path, { ...(opts || {}), method: 'DELETE', body }),
   upload: <T = any>(path: string, formData: FormData, opts?: FetchOpts) =>
     apiFetch<T>(path, { ...(opts || {}), method: 'POST', formData }),
 };
