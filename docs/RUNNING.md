@@ -1,7 +1,8 @@
 # EduRepo – Docker-Anleitung & Troubleshooting
 
 Diese Anleitung beschreibt den Betrieb der EduRepo-Plattform in einer
-**Docker-Container-Umgebung** (Test/Lokal/Home Server).
+**Docker-Container-Umgebung** (Test/Lokal/Home Server) sowie das Deployment
+auf einem **Produktivserver** (Produktionsmodus = Standard-Compose).
 
 > Voraussetzungen: **Docker ≥ 24** und **Docker Compose v2** (`docker compose`).
 > Prüfen: `docker --version && docker compose version`.
@@ -58,19 +59,42 @@ Trage in den jeweiligen Provider-Konsolen folgende **Redirect-URIs** ein:
 Falls du einen Reverse-Proxy vorlegst, leite `/api/*` ans Backend weiter und trage
 die Proxy-URL als `PUBLIC_BASE_URL` ein.
 
-### 1.3 Starten
+### 1.3 Starten (Produktionsmodus – Standard)
 
 ```bash
 docker compose up -d --build
 ```
 
+Die `docker-compose.yml` ist **produktionsreif**: Backend & Frontend werden als
+komplett gebaute Images gestartet (Multi-Stage-Build, kein Quellcode-Mount).
+Das reicht für Server-Deployments und lokale Tests ohne Hot-Reload.
+
+> **Wichtig für Server:** Benötigt nur das Repo (bzw. die Images) – nicht jedoch
+> eingecheckte/existierende `node_modules` oder besondere Ordnerrechte.
+
 Beim **ersten** Start passiert im Hintergrund:
 
 1. PostgreSQL, Redis, MinIO starten (mit Healthchecks).
 2. `minio-init` legt den Bucket `edurepo-files` an.
-3. Backend führt `prisma db push` aus (Schema-Synchronisation) und `prisma db seed`
+3. Backend-Entrypoint wendet das DB-Schema an (`prisma migrate deploy`, sobald
+   Migrationen existieren; sonst `prisma db push`) und führt den Seed aus
    (Fächer-Katalog + Admin-Konto).
-4. Backend und Frontend starten.
+4. Backend (`node dist/src/main.js`) und Frontend (`node server.js`, Next.js
+   standalone) starten.
+
+### 1.4 Starten (Entwicklungsmodus – Hot-Reload)
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+Das Override `docker-compose.dev.yml` aktiviert die **dev-Stages** der
+Dockerfiles, mountet den Quellcode als Volume (`./backend`, `./frontend`) und
+startet `nest start --watch` bzw. `next dev` – Änderungen am Code werden
+sofort wirksam (inkl. `prisma db push` + Seed beim Start).
+
+> Alle weiteren `docker compose`-Befehle in Entwicklung ebenfalls mit
+> `-f docker-compose.yml -f docker-compose.dev.yml` ausführen.
 
 Status prüfen:
 
@@ -206,15 +230,25 @@ docker compose run --rm minio-init mc mirror local/edurepo-files /backup
 
 ---
 
-## 8. Produktion (Hinweise)
+## 8. Produktion
 
-Für den produktiven Einsatz (späterer Schritt) zusätzlich beachten:
+Der **Produktionsmodus ist bereits der Standard** (`docker compose up -d --build`):
+
+- Backend & Frontend laufen als **multi-stage gebaute Images** (kein Quellcode-Mount,
+  keine Dev-Abhängigkeiten im Backend-Image, Non-Root-User `node`).
+- Der Backend-Entrypoint (`docker-entrypoint.sh`) wendet das Schema an:
+  `prisma migrate deploy`, sobald `prisma/migrations/` existiert, sonst
+  `prisma db push` – und startet danach `node dist/src/main.js`.
+- Frontend: Next.js **standalone**-Build (`output: 'standalone'`), Start via
+  `node server.js`.
+- `NODE_ENV` defaultet auf `production`, wenn nicht in `.env` gesetzt.
+
+Zusätzlich für den produktiven Einsatz beachten:
 
 - **TLS/HTTPS**: Reverse Proxy (Caddy/Traefik/Nginx) vorlegen; HTTPS erzwingen.
-- `NODE_ENV=production` setzen.
-- Backend-Command auf `prisma migrate deploy && node dist/main.js` umstellen
-  (Build-Stage im Dockerfile ergänzen).
-- Frontend: `npm run build && npm start` statt `npm run dev`.
+- **`NEXT_PUBLIC_*`-Variablen** (z. B. `NEXT_PUBLIC_API_URL`) werden beim
+  **Image-Build** eingebrannt → bei Änderung neu bauen
+  (`docker compose up -d --build frontend`).
 - `JWT_SECRET`, `APP_SECRET`, DB-Passwörter, MinIO-Root-Credentials → streng geheim.
 - Rate-Limiting & Brute-Force-Schutz am Proxy konfigurieren.
 - Regelmässige **Backups** (DB + Object Storage) einrichten.
@@ -234,6 +268,8 @@ Für den produktiven Einsatz (späterer Schritt) zusätzlich beachten:
 | 413 Payload Too Large | Datei > `MAX_FILE_SIZE_BYTES` (Default 100 MB) oder Proxy-Limit. |
 | Port bereits belegt | Port in `docker-compose.yml` oder auf dem Host ändern. |
 | Änderungen in `package.json` greifen nicht | Image neu bauen: `docker compose up -d --build backend`. |
+| `ENOENT: /app/package.json` (Frontend) oder `Could not find Prisma Schema` (Backend) auf dem Server | Alte Dev-Compose mit `./frontend:/app`-/`./backend:/app`-Mounts aktiv? Für Produktion **nur** `docker-compose.yml` nutzen (keine Override-Datei). Der Fehler entstand, wenn auf dem Server kein Quellcode lag und Docker leere Ordner über `/app` mountete. |
+| `NEXT_PUBLIC_*`-Änderung zeigt keine Wirkung | Wert ist im Frontend-Image eingebrannt → `docker compose up -d --build frontend`. |
 
 ### Logs_inspezionieren
 

@@ -45,7 +45,7 @@ Siehe auch Abschnitt 7 (Technologieentscheid) in [`docs/REQUIREMENTS.md`](docs/R
 
 ---
 
-## Schnellstart (Lokal / Home Server)
+## Schnellstart (Lokal / Home Server / Produktion)
 
 > Voraussetzung: **Docker** und **Docker Compose** sind installiert und der Docker-Daemon läuft.
 
@@ -54,12 +54,21 @@ Siehe auch Abschnitt 7 (Technologieentscheid) in [`docs/REQUIREMENTS.md`](docs/R
 cp .env.example .env
 #    → .env öffnen und Werte anpassen (insb. JWT_SECRET, SMTP, OAuth)
 
-# 2) Build & Start
+# 2) Build & Start (Produktionsmodus – selbständige Images, kein Code-Mount)
 docker compose up -d --build
 
 # 3) Logs ansehen (Initialisierung: Prisma-Migration + Seed)
 docker compose logs -f backend
 ```
+
+### Entwicklungsmodus (Hot-Reload)
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+> Override aktiviert dev-Stages, mountet `./backend` und `./frontend` als
+> Volume und startet `nest --watch` / `next dev`.
 
 Anschliessend erreichst du:
 
@@ -87,7 +96,8 @@ docker compose logs backend | grep "Passwort"
 
 ```
 EduRepo/
-├── docker-compose.yml      # Alle Services (DB, Redis, MinIO, Backend, Frontend)
+├── docker-compose.yml      # Alle Services – produktionsreif (gebaute Images)
+├── docker-compose.dev.yml  # Override für Entwicklung (Hot-Reload, Code-Mounts)
 ├── .env.example            # Vorlage für Konfiguration
 ├── docs/
 │   ├── REQUIREMENTS.md     # Anforderungsdokument (lebend, versioniert)
@@ -126,8 +136,10 @@ Siehe `.env.example` für die vollständige Liste. Die wichtigsten:
 
 ## Entwicklung
 
-- Backend-Änderungen werden dank Volume-Mount + `nest start --watch` **hot-reloaded**.
-- Frontend läuft im `next dev`-Modus (Hot-Reload).
+- Entwicklungsmodus starten:
+  `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
+  (Backend-Änderungen werden dank Volume-Mount + `nest start --watch` hot-reloaded,
+  Frontend läuft im `next dev`-Modus).
 - Schema ändern? `backend/prisma/schema.prisma` anpassen → Backend-Neustart synchronisiert via
   `prisma db push` automatisch. Für reproduzierbare Migrationen später `prisma migrate dev` nutzen.
 - API erkunden: http://localhost:4000/api/docs

@@ -1,5 +1,13 @@
-# EduRepo – Docker Compose (Test-/Lokale Umgebung)
+# EduRepo – Docker Compose
 # --------------------------------------------------------------------------
+# Diese Datei ist PRODUKTIONSREIF: Backend & Frontend laufen als komplett
+# gebaute Images (kein Quellcode-Mount nötig!). Es genügt, das Repo (oder die
+# Images) auf den Server zu kopieren und `docker compose up -d --build` –
+# fehlende Quellordner führen nicht mehr zu leeren /app-Verzeichnissen.
+#
+# FÜR ENTWICKLUNG (Hot-Reload, Volume-Mounts) stattdessen starten:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
 # Start:        docker compose up -d --build
 # Logs:         docker compose logs -f backend frontend
 # Stop:         docker compose down
@@ -83,10 +91,14 @@ services:
     restart: "no"
 
   # ------------------------------------------------------------------ Backend
+  # Produktions-Image (Multi-Stage-Build): enthaelt Code, Schema, Prisma-Client
+  # und Seed – KEIN Mount des Quellcodes. Der Entrypoint wendet das DB-Schema
+  # an (migrate deploy bzw. db push), seet und startet node dist/src/main.js.
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: prod
     restart: unless-stopped
     depends_on:
       postgres:
@@ -96,7 +108,7 @@ services:
       minio-init:
         condition: service_completed_successfully
     environment:
-      NODE_ENV: ${NODE_ENV:-development}
+      NODE_ENV: ${NODE_ENV:-production}
       # DB
       DATABASE_URL: ${DATABASE_URL}
       # Redis
@@ -135,23 +147,23 @@ services:
       INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@edurepo.local}
     ports:
       - "4000:4000"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    # Entwicklung: db push synchronisiert das Schema direkt (keine vorgenerierten Migrationen nötig).
-    # Für Produktion später auf "prisma migrate deploy" wechseln.
-    command: sh -c "npx prisma db push --accept-data-loss && npx prisma db seed && npm run start:dev"
 
   # ------------------------------------------------------------------ Frontend
+  # Produktions-Image (Multi-Stage-Build): next build (standalone) + node server.js.
+  # NEXT_PUBLIC_*-Variablen werden beim Build eingebrannt → Build-Args.
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: prod
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+        NEXT_PUBLIC_PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
     restart: unless-stopped
     depends_on:
       - backend
     environment:
-      NODE_ENV: ${NODE_ENV:-development}
+      NODE_ENV: ${NODE_ENV:-production}
       # Browser nutzt same-origin /api/*-Proxy (Rewrite in next.config.mjs).
       # NEXT_PUBLIC_API_URL nur setzen, wenn der Browser das Backend DIREKT
       # erreichen soll (dann Mixed-Content/CORS beachten!):
@@ -161,12 +173,3 @@ services:
       NEXT_PUBLIC_PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    command: npm run dev
-
-volumes:
-  postgres_data:
-  redis_data:
-  minio_data:

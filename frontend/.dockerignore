@@ -1,0 +1,9 @@
+# Build-Kontext schlank halten / Host-Artefakte nicht ins Image kopieren
+node_modules
+.next
+.env
+.env.*
+*.log
+tsconfig.tsbuildinfo
+Dockerfile
+.dockerignore

@@ -1,0 +1,38 @@
+# EduRepo – Docker Compose OVERRIDE für Entwicklung (Hot-Reload)
+# --------------------------------------------------------------------------
+# Wird ZUSAMMZLICH zur produktionsreifen docker-compose.yml genutzt:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
+# Effekt:
+#   - Baut die "dev"-Stages der Dockerfiles (statt "prod")
+#   - Mountet den Quellcode als Volume (Hot-Reload via nest --watch / next dev)
+#   - NODE_ENV=development, dev-typischer Start-Hook (db push + seed)
+#
+# Hinweis: Die reine Produktions-Compose (ohne dieses Override) benötigt KEINE
+# Quellcode-Mounts – dort sind alle Artefakte im Image enthalten. Das war die
+# Ursache für "ENOENT package.json" / "Could not find Prisma Schema" auf
+# Servern ohne ausgechecktem Quellcode.
+# --------------------------------------------------------------------------
+services:
+  backend:
+    build:
+      target: dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    # Entwicklung: db push synchronisiert das Schema direkt (keine vorgenerierten
+    # Migrationen nötig). Für Produktion siehe docker-entrypoint.sh.
+    command: sh -c "npx prisma db push --accept-data-loss && npx prisma db seed && npm run start:dev"
+
+  frontend:
+    build:
+      target: dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
