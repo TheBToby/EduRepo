@@ -6,9 +6,13 @@ const isServer = typeof window === 'undefined';
 function baseUrl(): string {
   if (isServer) {
     // Innerhalb des Containers (SSR) den internen Hostnamen nutzen
-    return process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://backend:4000';
+    return process.env.API_INTERNAL_URL || 'http://backend:4000';
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  // Client: standardmaessig same-origin ueber den Next.js-Rewrite /api/*
+  // (funktioniert mit localhost, lokaler IP und Reverse-Proxy/Coder-URL).
+  // NEXT_PUBLIC_API_URL setzt man nur, wenn der Browser das Backend direkt
+  // erreichen soll (z. B. http://<ip>:4000 im lokalen Netz).
+  return process.env.NEXT_PUBLIC_API_URL || '';
 }
 
 type FetchOpts = RequestInit & {
@@ -18,7 +22,17 @@ type FetchOpts = RequestInit & {
 
 export async function apiFetch<T = any>(path: string, opts: FetchOpts = {}): Promise<T> {
   const { formData, headers, ...rest } = opts;
-  const url = path.startsWith('http') ? path : `${baseUrl()}${path}`;
+  // Vollstaendige URLs (z. B. presigned S3-Links) direkt verwenden.
+  // Relative Pfade: Server-side direkt ans Backend, Client-side ueber den
+  // same-origin Proxy /api/* (Next.js-Rewrite in next.config.mjs).
+  let url: string;
+  if (path.startsWith('http')) {
+    url = path;
+  } else if (isServer) {
+    url = `${baseUrl()}${path}`;
+  } else {
+    url = `/api${path.startsWith('/') ? path : `/${path}`}`;
+  }
 
   const finalHeaders: Record<string, string> = {
     Accept: 'application/json',

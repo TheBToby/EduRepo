@@ -20,6 +20,8 @@
   "landing": {
     "heroTitle": "Austauschplattform für Schweizer Lehrpersonen",
     "heroSubtitle": "Erstelle, teile und entwickle Lehrmittel gemeinsam – einfach, sicher und auf den Lehrplan 21 abgestimmt.",
+    "heroSubtitleLoggedIn": "Schön, dass du wieder da bist – hier geht es direkt zu deinen Lehrmitteln.",
+    "welcomeBack": "Willkommen zurück",
     "forTeachers": "Exklusiv für aktive und ehemalige Lehrpersonen.",
     "ctaRegister": "Jetzt Konto beantragen",
     "ctaLogin": "Ich habe bereits ein Konto",
@@ -56,7 +58,15 @@
     "pendingDesc": "Dein Konto wurde erstellt und wartet auf die Freigabe durch ein Team-Mitglied. Du erhältst eine E-Mail, sobald du dich anmelden kannst.",
     "deleteAccountTitle": "Konto löschen",
     "deleteAccountDesc": "Dein Konto wird 30 Tage reaktivierbar deaktiviert. Du kannst deine Lehrmittel an eine andere Person übergeben.",
-    "transferTo": "Eigentum übertragen an (optionale E-Mail/ID)"
+    "transferTo": "Eigentum übertragen an (optionale E-Mail/ID)",
+    "changeAvatar": "Profilbild ändern",
+    "avatarHint": "PNG, JPG, WEBP oder GIF – max. 5 MB",
+    "avatarUpdated": "Profilbild aktualisiert",
+    "changePasswordTitle": "Passwort ändern",
+    "currentPassword": "Aktuelles Passwort",
+    "confirmPassword": "Neues Passwort bestätigen",
+    "passwordChanged": "Passwort geändert",
+    "passwordMismatch": "Die Passwörter stimmen nicht überein."
   },
   "nav": {
     "dashboard": "Übersicht",
@@ -67,6 +77,7 @@
   },
   "repo": {
     "create": "Neues Lehrmittel",
+    "emptyMine": "Noch keine eigenen Lehrmittel. Erstelle dein erstes!",
     "title": "Titel",
     "description": "Beschreibung",
     "subject": "Fach",
@@ -97,7 +108,14 @@
     "lock": "Sperren",
     "deactivate": "Deaktivieren",
     "setRole": "Rolle ändern",
-    "setQuota": "Speicherkontingent"
+    "setQuota": "Speicherkontingent",
+    "createUserTitle": "Nutzerverwaltung",
+    "createUser": "Nutzer anlegen",
+    "userCreated": "Nutzer {email} wurde angelegt (sofort aktiv).",
+    "passwordOptional": "optional",
+    "passwordHint": "Ohne Passwort kann der Nutzer sich nicht per E-Mail anmelden (z. B. nur OAuth).",
+    "noPending": "Keine ausstehenden Registrierungen.",
+    "actions": "Aktionen"
   },
   "help": {
     "repoAccess": "Wähle „Frei herunterladbar“, damit alle Nutzer das Lehrmittel herunterladen können. Wähle „Freigabe nötig“, wenn du den Zugriff pro Person steuern möchtest."

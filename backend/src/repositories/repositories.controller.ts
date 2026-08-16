@@ -41,6 +41,7 @@ class SearchDto {
   @IsOptional() @IsEnum(['recent', 'rating', 'popular']) sort?: 'recent' | 'rating' | 'popular';
   @IsOptional() @IsString() skip?: string;
   @IsOptional() @IsString() take?: string;
+  @IsOptional() @IsString() mine?: string; // "true"/"1" = nur eigene + Mitgliedschaften
 }
 
 @Controller('repositories')
@@ -49,11 +50,16 @@ export class RepositoriesController {
   constructor(private repos: RepositoriesService) {}
 
   @Get()
-  search(@Query() q: SearchDto) {
+  search(@CurrentUser() user: RequestUser, @Query() q: SearchDto) {
     // Query-Strings in Zahlen umwandeln, sofern vorhanden
     const subjectId = q.subjectId ? parseInt(q.subjectId, 10) : undefined;
     const skip = q.skip ? parseInt(q.skip, 10) : 0;
     const take = q.take ? parseInt(q.take, 10) : 24;
+    // mine=true: eigene Lehrmittel + Mitgliedschaften ("Meine Lehrmittel")
+    const mine = q.mine === 'true' || q.mine === '1';
+    if (mine) {
+      return this.repos.listMine(user.id, { skip, take });
+    }
     return this.repos.search({ ...q, subjectId, skip, take });
   }
 

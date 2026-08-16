@@ -94,6 +94,19 @@ export class RepositoriesService {
     return { items, total };
   }
 
+  /** "Meine Lehrmittel": eigene + Mitgliedschaften des Nutzers. */
+  async listMine(userId: string, params: { skip?: number; take?: number }) {
+    const { skip = 0, take = 50 } = params;
+    const where: Prisma.RepositoryWhereInput = {
+      OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+    };
+    const [items, total] = await Promise.all([
+      this.prisma.repository.findMany({ where, orderBy: { updatedAt: 'desc' }, skip, take, include: this.defaultInclude() }),
+      this.prisma.repository.count({ where }),
+    ]);
+    return { items, total };
+  }
+
   async getById(id: string) {
     const repo = await this.prisma.repository.findUnique({
       where: { id },

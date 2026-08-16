@@ -259,7 +259,66 @@ docker compose logs -f backend   # Admin-Passwort notieren!
 
 ---
 
-## 10. Datenfluss (Kurz)
+## 10. Coder Workspace (virtuelle IDE)
+
+Bei der Weiterentwicklung in einer **Coder-Workspace-Umgebung** gilt:
+
+### Persistente Daten
+
+Alle Daten, die ein Workspace-Update überleben müssen (PostgreSQL, Redis, MinIO),
+liegen in `/opt/coder/EduRepo/docker-data/` – gesteuert über `EDUREPO_DATA_DIR`
+in der `.env` (Standard ohne Coder: `./docker-data` im Repo).
+
+### Zugriff über die lokale Workspace-IP
+
+Die `.env` ist auf die lokale IP des Workspaces konfiguriert (z. B. `172.20.0.2`),
+damit Smoke Tests direkt im Browser (z. B. Brave) möglich sind:
+
+| Dienst | URL |
+|---|---|
+| Frontend | `http://<workspace-ip>:3000` |
+| API-Docs | `http://<workspace-ip>:4000/api/docs` |
+| MinIO Console | `http://<workspace-ip>:9001` |
+
+### API-Aufrufe: Same-Origin-Proxy (wichtig!)
+
+Der Browser ruft das Backend **nie direkt** auf. Stattdessen leitet der Next.js-Server
+alle `/api/*`-Pfade per Rewrite an das Backend weiter (`next.config.mjs`). Dadurch:
+
+- funktionieren Logins/Cookies über **jede** Zugriffs-URL (localhost, lokale IP,
+  Coder-Proxy-URL wie `https://3000--main--<workspace>--<host>`),
+- gibt es keine CORS- oder Mixed-Content-Fehler,
+- bleibt `NEXT_PUBLIC_API_URL` standardmässig **leer** (Same-Origin).
+
+Ein "Failed to fetch" im Browser deutet meist darauf hin, dass `NEXT_PUBLIC_API_URL`
+auf eine vom Browser aus nicht erreichbare Adresse (z. B. interne Docker-IP) gesetzt ist.
+
+> Hinweis: Nach einer Workspace-Aktualisierung kann sich die IP ändern – dann
+> `PUBLIC_BASE_URL`, `API_BASE_URL`, `CORS_ORIGINS` und `S3_PUBLIC_ENDPOINT`
+> in der `.env` anpassen und `docker compose up -d` ausführen.
+
+### Smoke Test (Brave, headless)
+
+```bash
+# Screenshot der Landing Page
+brave-browser --headless --no-sandbox --disable-gpu \
+  --screenshot=/tmp/frontend-de.png --window-size=1280,900 \
+  --virtual-time-budget=15000 http://172.20.0.2:3000/de
+
+# DOM-Inhalte prüfen
+brave-browser --headless --no-sandbox --disable-gpu --dump-dom \
+  --virtual-time-budget=15000 http://172.20.0.2:3000/de | grep -i edurepo
+```
+
+### Besonderheiten dieser Umgebung
+
+- **Ältere vCPU (nur SSE2 / kein x86-64-v2):** Aktuelle MinIO- und mc-Releases
+  starten nicht (`Fatal glibc error`). Deshalb sind in der `docker-compose.yml`
+  ältere, kompatible Releases gepinnt (`MINIO_IMAGE`, `MC_IMAGE` überschreibbar).
+- **Brave-Installation offline:** Brave via GitHub-Release-`.deb` installieren
+  (Brave-apt-Repo ist je nach Netzwerk-DNS evtl. nicht erreichbar).
+
+## 11. Datenfluss (Kurz)
 
 ```
 Browser → :3000 (Next.js Frontend, SSR) → :4000 (NestJS Backend API)

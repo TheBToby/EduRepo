@@ -18,7 +18,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-edurepo-secret}
       POSTGRES_DB: ${POSTGRES_DB:-edurepo}
     volumes:
-      - ./docker-data/postgres:/var/lib/postgresql/data
+      # Persistente Daten ausserhalb des Workspace (ueberlebt Workspace-Updates):
+      - ${EDUREPO_DATA_DIR:-./docker-data}/postgres:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -33,7 +34,7 @@ services:
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
-      - ./docker-data/redis:/data
+      - ${EDUREPO_DATA_DIR:-./docker-data}/redis:/data
     ports:
       - "6379:6379"
     healthcheck:
@@ -43,15 +44,18 @@ services:
       retries: 10
 
   # ------------------------------------------------------------------ MinIO (S3)
+  # Hinweis: Neuere MinIO-Releases benoetigen x86-64-v2 CPUs. Auf aelteren
+  # KVM/vCPU-Hosts (nur SSE2) ist der letzte kompatible Release vom 2022-10-24
+  # zu verwenden – via MINIO_IMAGE ueberschreibbar.
   minio:
-    image: minio/minio:latest
+    image: ${MINIO_IMAGE:-minio/minio:RELEASE.2022-10-24T18-35-07Z}
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-edurepo-minio}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-edurepo-minio-secret}
     volumes:
-      - ./docker-data/minio:/data
+      - ${EDUREPO_DATA_DIR:-./docker-data}/minio:/data
     ports:
       - "9000:9000"   # S3 API
       - "9001:9001"   # Web Console
@@ -63,7 +67,8 @@ services:
 
   # ---------------------------------------------- MinIO: Bucket auto-create
   minio-init:
-    image: minio/mc:latest
+    # Auch hier: aelterer Release fuer x86-64-v1 CPUs (siehe MinIO-Kommentar oben)
+    image: ${MC_IMAGE:-minio/mc:RELEASE.2023-01-11T03-14-16Z}
     depends_on:
       minio:
         condition: service_healthy
@@ -147,9 +152,11 @@ services:
       - backend
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      # Vom Browser genutzte API-URL:
-      NEXT_PUBLIC_API_URL: ${API_BASE_URL:-http://localhost:4000}
-      # Vom Server-Container genutzte interne API-URL (SSR):
+      # Browser nutzt same-origin /api/*-Proxy (Rewrite in next.config.mjs).
+      # NEXT_PUBLIC_API_URL nur setzen, wenn der Browser das Backend DIREKT
+      # erreichen soll (dann Mixed-Content/CORS beachten!):
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+      # Vom Server-Container genutzte interne API-URL (SSR + Rewrite-Target):
       API_INTERNAL_URL: http://backend:4000
       NEXT_PUBLIC_PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
     ports:

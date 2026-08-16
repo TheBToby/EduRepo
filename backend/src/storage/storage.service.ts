@@ -40,22 +40,35 @@ export class StorageService implements OnModuleInit {
     }
   }
 
-  /** Upload eines Streams mit SSE-Metadaten. */
+  /** Upload eines Streams. SSE nur aktivieren, wenn der Storage es unterstuetzt
+   *  (altes MinIO ohne KMS lehnt SSE-Header ab) und S3_USE_SSL/S3_SSE gesetzt ist. */
   async putObject(
     objectKey: string,
     stream: Readable | Buffer,
     size: number,
     mimeType: string,
   ): Promise<void> {
-    await this.client.putObject(this.bucket, objectKey, stream, size, {
-      'Content-Type': mimeType,
+    const sseEnabled = process.env.S3_SSE === 'true';
+    const metadata: Record<string, string> = { 'Content-Type': mimeType };
+    if (sseEnabled) {
       // Markierung, dass Inhalt verschlüsselt abgelegt wird (SSE-S3).
-      'X-Amz-Server-Side-Encryption': 'AES256',
-    });
+      metadata['X-Amz-Server-Side-Encryption'] = 'AES256';
+    }
+    await this.client.putObject(this.bucket, objectKey, stream, size, metadata);
   }
 
   async getObject(objectKey: string): Promise<Readable> {
     return this.client.getObject(this.bucket, objectKey);
+  }
+
+  /** Objekt als Buffer einlesen (z. B. fuer Avatare). */
+  async getObjectBuffer(objectKey: string): Promise<Buffer> {
+    const stream = await this.client.getObject(this.bucket, objectKey);
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : (chunk as Buffer));
+    }
+    return Buffer.concat(chunks);
   }
 
   async deleteObject(objectKey: string): Promise<void> {
@@ -64,6 +77,13 @@ export class StorageService implements OnModuleInit {
 
   /** Presigned URL für zeitlich begrenzten Download (z. B. 15 Min). */
   async presignedGetUrl(objectKey: string, expirySeconds = 900): Promise<string> {
-    return this.client.presignedGetObject(this.bucket, objectKey, expirySeconds);
+    const url = await this.client.presignedGetObject(this.bucket, objectKey, expirySeconds);
+    // Fuer den Browser-Zugriff die oeffentliche Endpoint-URL verwenden
+    // (interner Docker-Hostname ist vom Browser aus nicht erreichbar).
+    const publicEndpoint = process.env.S3_PUBLIC_ENDPOINT;
+    if (publicEndpoint) {
+      return url.replace(/^https?:\/\/[^/]+/, publicEndpoint.replace(/\/$/, ''));
+    }
+    return url;
   }
 }

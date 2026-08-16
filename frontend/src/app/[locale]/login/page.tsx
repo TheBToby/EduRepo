@@ -5,11 +5,13 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '../../../lib/api';
 import { Link } from '../../../i18n/navigation';
+import { useSession } from '../../../components/SessionProvider';
 
 export default function LoginPage() {
   const t = useTranslations('auth');
   const tCommon = useTranslations('common');
   const router = useRouter();
+  const { refresh } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +23,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await api.post('/auth/login', { email, password });
+      await refresh(); // Session aktualisieren (Sidebar/Header erscheinen sofort)
       router.push('/dashboard');
       router.refresh();
     } catch (err: any) {
@@ -31,7 +34,10 @@ export default function LoginPage() {
   };
 
   const oauth = (provider: 'google' | 'microsoft') => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    // Same-origin ueber den Next.js-Proxy (/api/* → Backend); funktioniert so
+    // auch hinter Reverse-Proxys (Coder-URL). NEXT_PUBLIC_API_URL nur setzen,
+    // wenn der Browser das Backend direkt erreichen soll.
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || '/api';
     window.location.href = `${apiBase}/auth/${provider}`;
   };
 

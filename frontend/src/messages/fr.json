@@ -20,6 +20,8 @@
   "landing": {
     "heroTitle": "Plateforme d'échange pour les enseignants suisses",
     "heroSubtitle": "Créez, partagez et développez des moyens d'enseignement ensemble – simplement, en toute sécurité et alignés sur le Lehrplan 21.",
+    "heroSubtitleLoggedIn": "Ravi de vous revoir – accédez directement à vos moyens d'enseignement.",
+    "welcomeBack": "Bon retour",
     "forTeachers": "Exclusivement pour les enseignants actifs et anciens.",
     "ctaRegister": "Demander un compte",
     "ctaLogin": "J'ai déjà un compte",
@@ -56,7 +58,15 @@
     "pendingDesc": "Votre compte a été créé et attend l'activation par un membre de l'équipe. Vous recevrez un e-mail dès que vous pourrez vous connecter.",
     "deleteAccountTitle": "Supprimer le compte",
     "deleteAccountDesc": "Votre compte sera désactivé et réactivable pendant 30 jours. Vous pouvez transférer vos moyens d'enseignement à une autre personne.",
-    "transferTo": "Transférer la propriété à (e-mail/ID facultatif)"
+    "transferTo": "Transférer la propriété à (e-mail/ID facultatif)",
+    "changeAvatar": "Changer la photo de profil",
+    "avatarHint": "PNG, JPG, WEBP ou GIF – max. 5 Mo",
+    "avatarUpdated": "Photo de profil mise à jour",
+    "changePasswordTitle": "Changer le mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "passwordChanged": "Mot de passe modifié",
+    "passwordMismatch": "Les mots de passe ne correspondent pas."
   },
   "nav": {
     "dashboard": "Aperçu",
@@ -67,6 +77,7 @@
   },
   "repo": {
     "create": "Nouveau moyen",
+    "emptyMine": "Pas encore de moyens d'enseignement. Créez votre premier !",
     "title": "Titre",
     "description": "Description",
     "subject": "Matière",
@@ -97,7 +108,14 @@
     "lock": "Bloquer",
     "deactivate": "Désactiver",
     "setRole": "Changer le rôle",
-    "setQuota": "Quota de stockage"
+    "setQuota": "Quota de stockage",
+    "createUserTitle": "Gestion des utilisateurs",
+    "createUser": "Créer un utilisateur",
+    "userCreated": "L'utilisateur {email} a été créé (immédiatement actif).",
+    "passwordOptional": "facultatif",
+    "passwordHint": "Sans mot de passe, l'utilisateur ne peut pas se connecter par e-mail (p. ex. OAuth uniquement).",
+    "noPending": "Aucune inscription en attente.",
+    "actions": "Actions"
   },
   "help": {
     "repoAccess": "Choisissez « Téléchargement libre » pour que tous puissent télécharger. Choisissez « Autorisation requise » pour contrôler l'accès par personne."

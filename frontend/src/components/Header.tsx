@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
+import { HeaderUserArea } from './HeaderUserArea';
 
 export function Header() {
   const t = useTranslations('common');
@@ -16,6 +17,7 @@ export function Header() {
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
           <ThemeToggle />
+          <HeaderUserArea />
         </div>
       </div>
     </header>

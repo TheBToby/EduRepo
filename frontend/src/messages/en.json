@@ -20,6 +20,8 @@
   "landing": {
     "heroTitle": "Exchange platform for Swiss teachers",
     "heroSubtitle": "Create, share and develop teaching materials together – simply, securely and aligned with Lehrplan 21.",
+    "heroSubtitleLoggedIn": "Great to see you again – jump straight into your materials.",
+    "welcomeBack": "Welcome back",
     "forTeachers": "Exclusively for active and former teachers.",
     "ctaRegister": "Request an account",
     "ctaLogin": "I already have an account",
@@ -56,7 +58,15 @@
     "pendingDesc": "Your account has been created and is awaiting activation by a team member. You will receive an email as soon as you can log in.",
     "deleteAccountTitle": "Delete account",
     "deleteAccountDesc": "Your account will be deactivated and reactivatable for 30 days. You can transfer your materials to another person.",
-    "transferTo": "Transfer ownership to (optional email/ID)"
+    "transferTo": "Transfer ownership to (optional email/ID)",
+    "changeAvatar": "Change profile picture",
+    "avatarHint": "PNG, JPG, WEBP or GIF – max. 5 MB",
+    "avatarUpdated": "Profile picture updated",
+    "changePasswordTitle": "Change password",
+    "currentPassword": "Current password",
+    "confirmPassword": "Confirm new password",
+    "passwordChanged": "Password changed",
+    "passwordMismatch": "The passwords do not match."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -67,6 +77,7 @@
   },
   "repo": {
     "create": "New material",
+    "emptyMine": "No materials yet. Create your first one!",
     "title": "Title",
     "description": "Description",
     "subject": "Subject",
@@ -97,7 +108,14 @@
     "lock": "Lock",
     "deactivate": "Deactivate",
     "setRole": "Change role",
-    "setQuota": "Storage quota"
+    "setQuota": "Storage quota",
+    "createUserTitle": "User management",
+    "createUser": "Create user",
+    "userCreated": "User {email} has been created (immediately active).",
+    "passwordOptional": "optional",
+    "passwordHint": "Without a password, the user cannot log in via email (e.g. OAuth only).",
+    "noPending": "No pending registrations.",
+    "actions": "Actions"
   },
   "help": {
     "repoAccess": "Choose “Free download” so everyone can download. Choose “Approval required” to control access per person."

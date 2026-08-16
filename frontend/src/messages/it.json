@@ -20,6 +20,8 @@
   "landing": {
     "heroTitle": "Piattaforma di scambio per docenti svizzeri",
     "heroSubtitle": "Crea, condividi e sviluppa mezzi didattici insieme – in modo semplice, sicuro e in linea con il Lehrplan 21.",
+    "heroSubtitleLoggedIn": "Bentornato – accedi direttamente ai tuoi mezzi didattici.",
+    "welcomeBack": "Bentornato",
     "forTeachers": "Esclusivamente per docenti attivi e ex docenti.",
     "ctaRegister": "Richiedi un account",
     "ctaLogin": "Ho già un account",
@@ -56,7 +58,15 @@
     "pendingDesc": "Il tuo account è stato creato ed è in attesa di attivazione da parte di un membro del team. Riceverai un'e-mail non appena potrai accedere.",
     "deleteAccountTitle": "Elimina account",
     "deleteAccountDesc": "Il tuo account verrà disattivato e riattivabile per 30 giorni. Puoi trasferire i tuoi mezzi didattici a un'altra persona.",
-    "transferTo": "Trasferisci proprietà a (e-mail/ID facoltativo)"
+    "transferTo": "Trasferisci proprietà a (e-mail/ID facoltativo)",
+    "changeAvatar": "Cambia immagine del profilo",
+    "avatarHint": "PNG, JPG, WEBP o GIF – max. 5 MB",
+    "avatarUpdated": "Immagine del profilo aggiornata",
+    "changePasswordTitle": "Cambia password",
+    "currentPassword": "Password attuale",
+    "confirmPassword": "Conferma la nuova password",
+    "passwordChanged": "Password modificata",
+    "passwordMismatch": "Le password non coincidono."
   },
   "nav": {
     "dashboard": "Panoramica",
@@ -67,6 +77,7 @@
   },
   "repo": {
     "create": "Nuovo mezzo",
+    "emptyMine": "Ancora nessun mezzo didattico. Crea il primo!",
     "title": "Titolo",
     "description": "Descrizione",
     "subject": "Materia",
@@ -97,7 +108,14 @@
     "lock": "Blocca",
     "deactivate": "Disattiva",
     "setRole": "Cambia ruolo",
-    "setQuota": "Quota di archiviazione"
+    "setQuota": "Quota di archiviazione",
+    "createUserTitle": "Gestione utenti",
+    "createUser": "Crea utente",
+    "userCreated": "L'utente {email} è stato creato (immediatamente attivo).",
+    "passwordOptional": "facoltativa",
+    "passwordHint": "Senza password, l'utente non può accedere via e-mail (p. es. solo OAuth).",
+    "noPending": "Nessuna registrazione in attesa.",
+    "actions": "Azioni"
   },
   "help": {
     "repoAccess": "Scegli «Download libero» per consentire a tutti di scaricare. Scegli «Autorizzazione necessaria» per controllare l'accesso per persona."
