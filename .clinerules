@@ -1,0 +1,125 @@
+# EduRepo – Cline Project Rules
+
+These rules exist to prevent recurring issues from past sessions. Read them fully
+before making changes, and re-check the "Known Pitfalls" section before touching
+Docker, Prisma, or environment configuration.
+
+## Project Overview
+
+- **Purpose**: Educational material repository/sharing platform for Swiss teachers (Lehrplan 21).
+- **Stack**: Next.js 14 (App Router, TypeScript, Tailwind, `next-intl`, `next-themes`) frontend ·
+  NestJS 10 + Prisma backend · PostgreSQL 16 · Redis 7 · MinIO (S3) · Docker Compose.
+- **Docs & comments are written in German** (README, docs/, inline comments).
+  Keep new comments/docs consistent with the surrounding language.
+- Relevant docs: `README.md`, `docs/RUNNING.md` (operations + troubleshooting),
+  `docs/REQUIREMENTS.md`, `docs/METADATA.md`.
+
+## Repository Layout
+
+```
+backend/          NestJS API (src/), Prisma schema + seed (prisma/), Dockerfile, docker-entrypoint.sh
+frontend/         Next.js app (src/app/[locale]/...), messages (src/messages/{de,en,fr,it}.json)
+docker-compose.yml        PRODUCTION compose (default) – self-contained images, NO source mounts
+docker-compose.dev.yml    DEV overlay (hot-reload) – only used together with docker-compose.yml
+.env.example      Template – MUST stay in sync with docker-compose.yml variables
+.env              Local secrets – gitignored, NEVER commit
+```
+
+## Commands (always run from repo root `/opt/src/EduRepo`)
+
+```bash
+# Production build & start (default):
+docker compose up -d --build
+
+# Development (hot-reload) – overlay is MANDATORY for dev:
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+
+# Logs / status:
+docker compose ps
+docker compose logs -f backend
+
+# Validate all buildable images (backend + frontend, prod stage):
+docker compose build
+
+# Validate dev stages as well:
+docker compose -f docker-compose.yml -f docker-compose.dev.yml build
+```
+
+- **No lock files are committed** (`npm install`, no `package-lock.json`). Keep it that way;
+  do not run `npm ci`.
+- Node images are `node:20-bookworm-slim`; backend needs `openssl`, `python3`, `make`, `g++`
+  (argon2/Prisma engines) in build stages only.
+- Frontend prod build expects `output: 'standalone'` (`next.config.mjs`) and starts `node server.js`.
+
+## Verification Workflow (MANDATORY)
+
+1. After changing **Dockerfiles, package.json, compose files, or anything affecting the build**:
+   run `docker compose build` and confirm it succeeds. If dev-relevant, also build dev stages.
+2. After changing **backend/frontend source**: rebuild and start the stack, then check
+   `docker compose ps` (all services Up/healthy) and scan `docker compose logs backend frontend`
+   for errors before declaring success.
+3. After changing **Prisma schema** (`backend/prisma/schema.prisma`): the entrypoint applies it
+   via `prisma migrate deploy` (if `prisma/migrations/` exists) else `prisma db push`, then runs
+   the idempotent seed (`node dist/prisma/seed.js`). Restart backend to re-apply.
+4. Never claim "done" while a container is crash-looping. Check logs and fix the root cause.
+
+## Known Pitfalls – DO NOT reintroduce these
+
+### Docker / Deployment
+- **NEVER bind-mount source code in the production compose** (`docker-compose.yml`).
+  Mounting `./backend:/app` or `./frontend:/app` on servers without a checkout caused
+  `ENOENT: /app/package.json` and `Could not find Prisma Schema`. Source mounts live
+  ONLY in `docker-compose.dev.yml`.
+- **MinIO/mc image versions are deliberately pinned** (`minio/minio:RELEASE.2022-10-24T18-35-07Z`,
+  `minio/mc:RELEASE.2023-01-11T03-14-16Z`) because the target host CPU lacks x86-64-v2 support;
+  newer releases crash with `Fatal glibc error`. Do NOT "update" them unless the host changes.
+  Overridable via `MINIO_IMAGE` / `MC_IMAGE`.
+- **`NEXT_PUBLIC_*` variables are baked into the frontend image at build time.**
+  Changing them requires `docker compose up -d --build frontend`.
+- **Browser talks same-origin only**: Next.js rewrites `/api/*` → `API_INTERNAL_URL`
+  (default `http://backend:4000`). Keep `NEXT_PUBLIC_API_URL` empty by default. Setting it to
+  an unreachable host causes "Failed to fetch" / CORS / mixed-content errors.
+- **S3 credentials**: In `docker-compose.yml`, `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` default
+  to `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`. Leave `S3_*` unset in `.env` unless a dedicated
+  service account exists – mismatches caused `SignatureDoesNotMatch`/`InvalidAccessKeyId`.
+- **Do not swallow errors** (e.g. `.catch(() => false)`) in initialization paths (storage,
+  minio-init, migrations) – this produced cryptic cascading failures. Fail fast with a clear,
+  actionable diagnostic message instead.
+- Data persistence: volumes live under `${EDUREPO_DATA_DIR:-./docker-data}` (Coder workspace:
+  `/opt/coder/EduRepo/docker-data`). After a workspace update the IP may change – then update
+  `PUBLIC_BASE_URL`, `API_BASE_URL`, `CORS_ORIGINS`, `S3_PUBLIC_ENDPOINT` in `.env`.
+
+### Backend (NestJS + Prisma)
+- Seed must stay **idempotent** (upsert catalogs; create admin only if missing; random admin
+  password is printed to logs once).
+- `prisma/seed.ts` is compiled to `dist/prisma/seed.js` (tsconfig includes `prisma/**/*.ts`;
+  `rootDir: "."` → `dist/src/main.js`). If build output paths change, update
+  `backend/docker-entrypoint.sh` and `package.json` scripts together.
+- `npm prune --omit=dev` can delete the generated Prisma client – the prod Dockerfile
+  re-runs `npx prisma generate` after pruning. Preserve this.
+- Env vars consumed by the backend are declared in `docker-compose.yml` – when adding one,
+  also add it to `.env.example` (with a safe default or comment) and keep
+  compose defaults in sync.
+
+### Frontend (Next.js)
+- **i18n: all four locales** (`de`, `en`, `fr`, `it`) in `frontend/src/messages/*.json` must
+  receive every new translation key. Never update only one locale file.
+- Routes live under `src/app/[locale]/`; use helpers from `src/i18n/` for links/redirects.
+- Auth uses an httpOnly cookie (`access_token`) set by the backend – API calls from the browser
+  must go through the same-origin `/api` proxy, not direct backend URLs.
+
+### Git / Terminal
+- **Avoid interactive pagers**: use `git --no-pager <cmd>` or append `| cat` (a hung pager
+  blocked previous sessions). Prefer non-interactive commands (`-y`, `--no-pager`, etc.).
+- Never commit `.env`, `node_modules/`, `dist/`, `.next/`, or `docker-data/`.
+  Check `git status` before committing.
+- Commit message style: Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, …), English,
+  with a body explaining the "why" for non-trivial changes (see `git log` for examples).
+
+## Task Etiquette
+
+- Start every task by exploring the codebase; don't assume structure.
+- Keep changes minimal and consistent with existing style (German comments, file naming,
+  module layout under `backend/src/<feature>/`, feature pages under `frontend/src/app/[locale]/`).
+- After finishing, verify with the workflow under "Verification Workflow" and summarize
+  what was changed, built, and how it was validated.
