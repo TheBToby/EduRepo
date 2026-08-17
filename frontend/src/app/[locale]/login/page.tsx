@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { Alert, Box, Button, Card, CardContent, Divider, Link as MuiLink, Stack, TextField, Typography } from '@mui/material';
+import GoogleIcon from '@mui/icons-material/Google';
+import MicrosoftIcon from '@mui/icons-material/Window';
 import { api, ApiError } from '../../../lib/api';
 import { Link } from '../../../i18n/navigation';
 import { useSession } from '../../../components/SessionProvider';
@@ -42,57 +45,63 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="mb-6 text-2xl font-bold">{t('loginTitle')}</h1>
-      <form onSubmit={submit} className="space-y-4">
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('loginEmail')}</label>
-          <input
-            type="email"
-            required
-            className="input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('loginPassword')}</label>
-          <input
-            type="password"
-            required
-            className="input"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-          />
-        </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" className="btn-primary w-full" disabled={loading}>
-          {loading ? tCommon('loading') : t('loginSubmit')}
-        </button>
-      </form>
+    <Box sx={{ maxWidth: 420, mx: 'auto' }}>
+      <Typography variant="h5" component="h1" sx={{ fontWeight: 700, mb: 3 }}>
+        {t('loginTitle')}
+      </Typography>
+      <Card variant="outlined">
+        <CardContent sx={{ p: 3 }}>
+          <form onSubmit={submit}>
+            <Stack spacing={2.5}>
+              <TextField
+                type="email"
+                required
+                label={t('loginEmail')}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                fullWidth
+              />
+              <TextField
+                type="password"
+                required
+                label={t('loginPassword')}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                fullWidth
+              />
+              {error && <Alert severity="error">{error}</Alert>}
+              <Button type="submit" variant="contained" fullWidth disabled={loading} size="large">
+                {loading ? tCommon('loading') : t('loginSubmit')}
+              </Button>
+            </Stack>
+          </form>
 
-      <div className="my-4 text-center text-sm">
-        <Link href="/forgot-password" className="text-brand-600 hover:underline dark:text-brand-400">
-          {t('forgotPassword')}
-        </Link>
-      </div>
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+            <MuiLink component={Link} href="/forgot-password" variant="body2" underline="hover">
+              {t('forgotPassword')}
+            </MuiLink>
+          </Box>
 
-      <div className="space-y-2">
-        <button onClick={() => oauth('google')} className="btn-secondary w-full">
-          {t('loginGoogle')}
-        </button>
-        <button onClick={() => oauth('microsoft')} className="btn-secondary w-full">
-          {t('loginMicrosoft')}
-        </button>
-      </div>
+          <Divider sx={{ my: 3 }} />
 
-      <p className="mt-6 text-center text-sm text-[rgb(var(--foreground))]/70">
-        <Link href="/register" className="text-brand-600 hover:underline dark:text-brand-400">
+          <Stack spacing={1.5}>
+            <Button onClick={() => oauth('google')} variant="outlined" fullWidth startIcon={<GoogleIcon />}>
+              {t('loginGoogle')}
+            </Button>
+            <Button onClick={() => oauth('microsoft')} variant="outlined" fullWidth startIcon={<MicrosoftIcon />}>
+              {t('loginMicrosoft')}
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 3, textAlign: 'center' }}>
+        <MuiLink component={Link} href="/register" underline="hover">
           {tCommon('register')}
-        </Link>
-      </p>
-    </div>
+        </MuiLink>
+      </Typography>
+    </Box>
   );
 }

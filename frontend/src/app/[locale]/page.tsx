@@ -1,6 +1,12 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import LockIcon from '@mui/icons-material/Lock';
+import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import StarIcon from '@mui/icons-material/StarRate';
+import InfoIcon from '@mui/icons-material/Info';
 import { Link } from '../../i18n/navigation';
 import { useSession } from '../../components/SessionProvider';
 
@@ -10,81 +16,99 @@ export default function LandingPage() {
   const { user, loading } = useSession();
 
   const features = [
-    { icon: '📚', title: t('featureReposTitle'), desc: t('featureReposDesc') },
-    { icon: '🔒', title: t('featureSecureTitle'), desc: t('featureSecureDesc') },
-    { icon: '🎯', title: t('featureCurriculumTitle'), desc: t('featureCurriculumDesc') },
-    { icon: '⭐', title: t('featureRatingTitle'), desc: t('featureRatingDesc') },
+    { icon: <MenuBookIcon color="primary" />, title: t('featureReposTitle'), desc: t('featureReposDesc') },
+    { icon: <LockIcon color="primary" />, title: t('featureSecureTitle'), desc: t('featureSecureDesc') },
+    { icon: <TrackChangesIcon color="primary" />, title: t('featureCurriculumTitle'), desc: t('featureCurriculumDesc') },
+    { icon: <StarIcon color="primary" />, title: t('featureRatingTitle'), desc: t('featureRatingDesc') },
   ];
 
   return (
-    <div className="space-y-16">
+    <Stack spacing={{ xs: 6, md: 10 }}>
       {/* Hero */}
-      <section className="text-center">
+      <Box sx={{ textAlign: 'center', pt: { xs: 2, md: 4 } }}>
         {user ? (
           // Angemeldet: persoenliche Begruessung + direkter Zugriff auf Features
           <>
-            <p className="mb-3 text-sm font-medium text-brand-600 dark:text-brand-400">
+            <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 1.5 }}>
               {t('welcomeBack')}
-            </p>
-            <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
+            </Typography>
+            <Typography
+              variant="h3"
+              component="h1"
+              sx={{ fontWeight: 800, letterSpacing: '-0.02em', mx: 'auto', maxWidth: 720 }}
+            >
               {user.displayName}
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-[rgb(var(--foreground))]/70">
+            </Typography>
+            <Typography variant="h6" color="text.secondary" sx={{ mt: 2.5, mx: 'auto', maxWidth: 600, fontWeight: 400 }}>
               {t('heroSubtitleLoggedIn')}
-            </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Link href="/dashboard" className="btn-primary">
+            </Typography>
+            <Stack direction="row" spacing={1.5} justifyContent="center" flexWrap="wrap" sx={{ mt: 4 }}>
+              <Button component={Link} href="/dashboard" variant="contained" size="large">
                 {tNav('dashboard')}
-              </Link>
-              <Link href="/repositories" className="btn-secondary">
+              </Button>
+              <Button component={Link} href="/repositories" variant="outlined" size="large">
                 {tNav('myRepos')}
-              </Link>
-              <Link href="/browse" className="btn-secondary">
+              </Button>
+              <Button component={Link} href="/browse" variant="outlined" size="large">
                 {tNav('browse')}
-              </Link>
-            </div>
+              </Button>
+            </Stack>
           </>
         ) : (
           // Gast: Registrierung/Login
           <>
-            <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
+            <Typography
+              variant="h3"
+              component="h1"
+              sx={{ fontWeight: 800, letterSpacing: '-0.02em', mx: 'auto', maxWidth: 720 }}
+            >
               {t('heroTitle')}
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-[rgb(var(--foreground))]/70">
+            </Typography>
+            <Typography variant="h6" color="text.secondary" sx={{ mt: 2.5, mx: 'auto', maxWidth: 600, fontWeight: 400 }}>
               {t('heroSubtitle')}
-            </p>
-            <p className="mt-3 text-sm font-medium text-brand-600 dark:text-brand-400">
+            </Typography>
+            <Typography variant="subtitle2" color="primary" sx={{ mt: 1.5, fontWeight: 600 }}>
               {t('forTeachers')}
-            </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Link href="/register" className="btn-primary">
+            </Typography>
+            <Stack direction="row" spacing={1.5} justifyContent="center" flexWrap="wrap" sx={{ mt: 4 }}>
+              <Button component={Link} href="/register" variant="contained" size="large">
                 {t('ctaRegister')}
-              </Link>
-              <Link href="/login" className="btn-secondary">
+              </Button>
+              <Button component={Link} href="/login" variant="outlined" size="large">
                 {t('ctaLogin')}
-              </Link>
-            </div>
+              </Button>
+            </Stack>
           </>
         )}
-      </section>
+      </Box>
 
       {/* Features */}
-      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <Box sx={{ display: 'grid', gap: 2.5, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' } }}>
         {features.map((f) => (
-          <div key={f.title} className="card">
-            <div className="mb-3 text-3xl" aria-hidden>
-              {f.icon}
-            </div>
-            <h3 className="mb-2 font-semibold">{f.title}</h3>
-            <p className="text-sm text-[rgb(var(--foreground))]/70">{f.desc}</p>
-          </div>
+          <Card key={f.title} variant="outlined" sx={{ height: '100%' }}>
+            <CardContent>
+              <Box sx={{ mb: 1.5 }}>{f.icon}</Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                {f.title}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {f.desc}
+              </Typography>
+            </CardContent>
+          </Card>
         ))}
-      </section>
+      </Box>
 
       {/* Hinweis nur Lehrpersonen */}
-      <section className="card border-brand-500/30 bg-brand-50/50 dark:bg-brand-900/10">
-        <p className="text-sm">{t('infoOnlyTeachers')}</p>
-      </section>
-    </div>
+      <Card
+        variant="outlined"
+        sx={{ borderColor: 'primary.light', bgcolor: 'primary.main', color: 'primary.contrastText' }}
+      >
+        <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5, '&:last-child': { pb: 2 } }}>
+          <InfoIcon />
+          <Typography variant="body2">{t('infoOnlyTeachers')}</Typography>
+        </CardContent>
+      </Card>
+    </Stack>
   );
 }

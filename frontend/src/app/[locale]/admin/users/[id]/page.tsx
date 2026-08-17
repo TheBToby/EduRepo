@@ -1,11 +1,24 @@
 'use client';
 
-// Admin/Moderator: Nutzerprofil einsehen (Klick auf den Nutzernamen in der
-// Nutzerverwaltung). Zeigt Stamm- und Lehrberufsdaten im Nur-Lese-Modus und
-// bietet Schnellaktionen (Status ändern, löschen mit Kulanzfrist).
+// Admin/Moderator (MUI): Nutzerprofil einsehen (Klick auf den Nutzernamen
+// in der Nutzerverwaltung). Zeigt Stamm- und Lehrberufsdaten im Nur-Lese-Modus
+// und bietet Schnellaktionen (Status ändern, löschen mit Kulanzfrist).
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Divider,
+  Stack,
+  Typography,
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { api, ApiError } from '../../../../../lib/api';
 import { Link } from '../../../../../i18n/navigation';
 import { Avatar } from '../../../../../components/Avatar';
@@ -39,8 +52,6 @@ type UserProfile = {
   educationSector?: 'GENERAL' | 'VOCATIONAL' | null;
 };
 
-const SCHOOL_LEVELS = ['KINDERGARTEN', 'PRIMARY', 'LOWER_SECONDARY', 'UPPER_SECONDARY', 'TERTIARY'];
-
 function formatBytes(bytes?: string | number | null): string {
   if (bytes === undefined || bytes === null) return '—';
   const n = Number(bytes);
@@ -66,6 +77,7 @@ export default function AdminUserPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [msgOk, setMsgOk] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -82,15 +94,20 @@ export default function AdminUserPage() {
     load();
   }, [load]);
 
+  const flash = (text: string, ok: boolean) => {
+    setMsgOk(ok);
+    setMsg(text);
+  };
+
   const setStatus = async (status: 'ACTIVE' | 'LOCKED' | 'DEACTIVATED') => {
     setBusy(true);
     setMsg(null);
     try {
       await api.patch(`/users/${params.id}/status`, { status });
-      setMsg('✓ ' + tAdmin('statusUpdated'));
+      flash('✓ ' + tAdmin('statusUpdated'), true);
       load();
     } catch (err: any) {
-      setMsg('✗ ' + err.message);
+      flash('✗ ' + err.message, false);
     } finally {
       setBusy(false);
     }
@@ -108,17 +125,23 @@ export default function AdminUserPage() {
           ...(transfer ? { transferToUserId: transfer } : {}),
         },
       });
-      setMsg('✓ ' + tAdmin('deleteScheduled', { date: new Date(res.permanentDeleteAt).toLocaleDateString() }));
+      flash('✓ ' + tAdmin('deleteScheduled', { date: new Date(res.permanentDeleteAt).toLocaleDateString() }), true);
       load();
     } catch (err: any) {
-      setMsg('✗ ' + err.message);
+      flash('✗ ' + err.message, false);
     } finally {
       setBusy(false);
     }
   };
 
-  if (error) return <p className="text-red-600">{error}</p>;
-  if (!user) return <p>{tCommon('loading')}</p>;
+  if (error) return <Alert severity="error">{error}</Alert>;
+  if (!user) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   const retentionLeft = retentionDaysLeft(user.permanentDeleteAt);
 
@@ -146,108 +169,144 @@ export default function AdminUserPage() {
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{tAdmin('userProfile')}</h1>
-        <Link href="/admin" className="btn-secondary">← {tAdmin('backToUsers')}</Link>
-      </div>
+    <Stack spacing={4}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
+          {tAdmin('userProfile')}
+        </Typography>
+        <Button component={Link} href="/admin" variant="outlined" startIcon={<ArrowBackIcon />}>
+          {tAdmin('backToUsers')}
+        </Button>
+      </Box>
 
       {/* Kopf mit Avatar (Standard-Profilbild, falls keines vorhanden) */}
-      <section className="card flex flex-wrap items-center gap-5">
-        <Avatar
-          avatarUrl={user.avatarUrl}
-          name={user.displayName || user.email}
-          size={72}
-          endpoint={`/users/${user.id}/avatar`}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-bold">{user.displayName}</h2>
-            <span className={`rounded px-2 py-1 text-xs ${
-              user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-            }`}>
-              {user.status}
-            </span>
-            {retentionLeft !== null && (
-              <span className="rounded bg-red-100 px-2 py-1 text-xs text-red-700">
-                {tAdmin('retentionRunning', { days: retentionLeft })}
-              </span>
+      <Card variant="outlined">
+        <CardContent>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2.5 }}>
+            <Avatar
+              avatarUrl={user.avatarUrl}
+              name={user.displayName || user.email}
+              size={72}
+              endpoint={`/users/${user.id}/avatar`}
+            />
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5 }}>
+                <Typography variant="h5" component="h2" sx={{ fontWeight: 700 }}>
+                  {user.displayName}
+                </Typography>
+                <Chip
+                  size="small"
+                  color={user.status === 'ACTIVE' ? 'success' : 'warning'}
+                  label={user.status}
+                />
+                {retentionLeft !== null && (
+                  <Chip size="small" color="error" variant="outlined" label={tAdmin('retentionRunning', { days: retentionLeft })} />
+                )}
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {user.email}
+              </Typography>
+            </Box>
+            {/* Schnellaktionen */}
+            {user.role !== 'ADMIN' && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {user.status !== 'ACTIVE' && user.status !== 'SOFT_DELETED' && (
+                  <Button onClick={() => setStatus('ACTIVE')} variant="contained" size="small" disabled={busy}>
+                    ✓ {tAdmin('activate')}
+                  </Button>
+                )}
+                {user.status === 'ACTIVE' && (
+                  <>
+                    <Button onClick={() => setStatus('LOCKED')} variant="outlined" size="small" disabled={busy}>
+                      🔒 {tAdmin('lock')}
+                    </Button>
+                    <Button onClick={() => setStatus('DEACTIVATED')} variant="outlined" size="small" disabled={busy}>
+                      ⏸ {tAdmin('deactivate')}
+                    </Button>
+                    <Button onClick={deleteUser} variant="outlined" size="small" color="error" disabled={busy}>
+                      🗑 {tAdmin('deleteUser')}
+                    </Button>
+                  </>
+                )}
+              </Box>
             )}
-          </div>
-          <p className="mt-1 truncate text-sm text-[rgb(var(--foreground))]/60">{user.email}</p>
-        </div>
-        {/* Schnellaktionen */}
-        {user.role !== 'ADMIN' && (
-          <div className="flex flex-wrap gap-2">
-            {user.status !== 'ACTIVE' && user.status !== 'SOFT_DELETED' && (
-              <button onClick={() => setStatus('ACTIVE')} className="btn-primary text-sm" disabled={busy}>
-                ✓ {tAdmin('activate')}
-              </button>
-            )}
-            {user.status === 'ACTIVE' && (
-              <>
-                <button onClick={() => setStatus('LOCKED')} className="btn-secondary text-sm" disabled={busy}>
-                  🔒 {tAdmin('lock')}
-                </button>
-                <button onClick={() => setStatus('DEACTIVATED')} className="btn-secondary text-sm" disabled={busy}>
-                  ⏸ {tAdmin('deactivate')}
-                </button>
-                <button onClick={deleteUser} className="btn-secondary text-sm text-red-600" disabled={busy}>
-                  🗑 {tAdmin('deleteUser')}
-                </button>
-              </>
-            )}
-          </div>
-        )}
-      </section>
+          </Box>
+        </CardContent>
+      </Card>
 
-      {msg && <p className="text-sm">{msg}</p>}
+      {msg && <Alert severity={msgOk ? 'success' : 'error'}>{msg}</Alert>}
 
       {/* Stammdaten */}
-      <section>
-        <h3 className="mb-3 font-semibold">{tAdmin('accountData')}</h3>
-        <dl className="card divide-y divide-[rgb(var(--border))]/50 text-sm">
-          {rows.map(([label, value]) => (
-            <div key={label} className="flex justify-between gap-4 px-4 py-2">
-              <dt className="text-[rgb(var(--foreground))]/60">{label}</dt>
-              <dd className="text-right font-medium">{value || '—'}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
+      <Box>
+        <Typography variant="h6" component="h3" sx={{ mb: 1.5 }}>
+          {tAdmin('accountData')}
+        </Typography>
+        <Card variant="outlined">
+          <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+            {rows.map(([label, value], idx) => (
+              <Box key={label}>
+                {idx > 0 && <Divider />}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, px: 2, py: 1.25 }}>
+                  <Typography variant="body2" color="text.secondary">{label}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500, textAlign: 'right' }}>{value || '—'}</Typography>
+                </Box>
+              </Box>
+            ))}
+          </CardContent>
+        </Card>
+      </Box>
 
       {/* Lehrberuf */}
-      <section>
-        <h3 className="mb-3 font-semibold">{tProfile('sectionTitle')}</h3>
-        <dl className="card divide-y divide-[rgb(var(--border))]/50 text-sm">
-          {teacherRows.map(([label, value]) => (
-            <div key={label} className="flex justify-between gap-4 px-4 py-2">
-              <dt className="text-[rgb(var(--foreground))]/60">{label}</dt>
-              <dd className="max-w-[60%] text-right font-medium">{value || '—'}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
+      <Box>
+        <Typography variant="h6" component="h3" sx={{ mb: 1.5 }}>
+          {tProfile('sectionTitle')}
+        </Typography>
+        <Card variant="outlined">
+          <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+            {teacherRows.map(([label, value], idx) => (
+              <Box key={label}>
+                {idx > 0 && <Divider />}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, px: 2, py: 1.25 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>{label}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500, textAlign: 'right', maxWidth: '60%' }}>{value || '—'}</Typography>
+                </Box>
+              </Box>
+            ))}
+          </CardContent>
+        </Card>
+      </Box>
 
       {/* Bio & Kurz-CV */}
       {(user.bio || user.curriculumVitae) && (
-        <section className="space-y-4">
+        <Stack spacing={2}>
           {user.bio && (
-            <div>
-              <h3 className="mb-2 font-semibold">{tProfile('bio')}</h3>
-              <p className="card whitespace-pre-wrap text-sm">{user.bio}</p>
-            </div>
+            <Box>
+              <Typography variant="h6" component="h3" sx={{ mb: 1 }}>
+                {tProfile('bio')}
+              </Typography>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{user.bio}</Typography>
+                </CardContent>
+              </Card>
+            </Box>
           )}
           {user.curriculumVitae && (
-            <div>
-              <h3 className="mb-2 font-semibold">{tProfile('curriculumVitae')}</h3>
-              <p className="card whitespace-pre-wrap text-sm">{user.curriculumVitae}</p>
-            </div>
+            <Box>
+              <Typography variant="h6" component="h3" sx={{ mb: 1 }}>
+                {tProfile('curriculumVitae')}
+              </Typography>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{user.curriculumVitae}</Typography>
+                </CardContent>
+              </Card>
+            </Box>
           )}
-        </section>
+        </Stack>
       )}
 
-      <p className="text-xs text-[rgb(var(--foreground))]/50">{tAdmin('readOnlyNotice')}</p>
-    </div>
+      <Typography variant="caption" color="text.secondary">{tAdmin('readOnlyNotice')}</Typography>
+    </Stack>
   );
 }

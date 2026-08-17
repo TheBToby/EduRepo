@@ -3,7 +3,10 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { Alert, Box, Button, Card, CardContent, Stack, TextField, Typography } from '@mui/material';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { api } from '../../../lib/api';
+import { Link } from '../../../i18n/navigation';
 
 function ResetForm() {
   const t = useTranslations('auth');
@@ -26,41 +29,58 @@ function ResetForm() {
 
   if (done) {
     return (
-      <div className="mx-auto max-w-md text-center">
-        <div className="mb-4 text-4xl" aria-hidden>✅</div>
-        <p>Passwort erfolgreich geändert. Du kannst dich jetzt anmelden.</p>
-        <a href="/login" className="btn-primary mt-4 inline-block">{t('loginTitle')}</a>
-      </div>
+      <Box sx={{ maxWidth: 420, mx: 'auto', textAlign: 'center' }}>
+        <Box sx={{ mb: 2, color: 'success.main', display: 'flex', justifyContent: 'center' }}>
+          <CheckCircleOutlineIcon sx={{ fontSize: 56 }} />
+        </Box>
+        <Typography sx={{ mb: 3 }}>Passwort erfolgreich geändert. Du kannst dich jetzt anmelden.</Typography>
+        <Button component={Link} href="/login" variant="contained">
+          {t('loginTitle')}
+        </Button>
+      </Box>
     );
   }
 
   if (!token) {
     return (
-      <div className="mx-auto max-w-md text-center">
-        <p className="text-red-600">Ungültiger oder fehlender Reset-Link.</p>
-      </div>
+      <Box sx={{ maxWidth: 420, mx: 'auto' }}>
+        <Alert severity="error">Ungültiger oder fehlender Reset-Link.</Alert>
+      </Box>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="mb-2 text-2xl font-bold">{t('resetTitle')}</h1>
-      <p className="mb-6 text-sm text-[rgb(var(--foreground))]/70">{t('resetConfirmDesc')}</p>
-      <form onSubmit={submit} className="space-y-4">
-        <input
-          type="password"
-          required
-          minLength={8}
-          className="input"
-          placeholder={t('resetNewPassword')}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="new-password"
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" className="btn-primary w-full">{t('resetSubmit')}</button>
-      </form>
-    </div>
+    <Box sx={{ maxWidth: 420, mx: 'auto' }}>
+      <Typography variant="h5" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+        {t('resetTitle')}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        {t('resetConfirmDesc')}
+      </Typography>
+      <Card variant="outlined">
+        <CardContent sx={{ p: 3 }}>
+          <form onSubmit={submit}>
+            <Stack spacing={2.5}>
+              <TextField
+                type="password"
+                required
+                slotProps={{ htmlInput: { minLength: 8 } }}
+                label={t('resetNewPassword')}
+                placeholder={t('resetNewPassword')}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                fullWidth
+              />
+              {error && <Alert severity="error">{error}</Alert>}
+              <Button type="submit" variant="contained" fullWidth size="large">
+                {t('resetSubmit')}
+              </Button>
+            </Stack>
+          </form>
+        </CardContent>
+      </Card>
+    </Box>
   );
 }
 

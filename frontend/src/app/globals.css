@@ -1,48 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  --background: 255 255 255;
-  --foreground: 15 23 42;
-  --muted: 241 245 249;
-  --border: 226 232 240;
-  --brand: 37 99 235;
-}
-
-.dark {
-  --background: 15 23 42;
-  --foreground: 226 232 240;
-  --muted: 30 41 59;
-  --border: 51 65 85;
-  --brand: 96 165 250;
-}
+/* Globale Styles – UI basiert auf Material UI (MUI); dieses File enthaelt
+   nur noch minimale Basis-Anpassungen, die MUI nicht selbst vornimmt. */
 
 html {
   color-scheme: light dark;
 }
 
 body {
-  background-color: rgb(var(--background));
-  color: rgb(var(--foreground));
-  transition: background-color 0.2s ease, color 0.2s ease;
+  margin: 0;
 }
 
-/* Hilfsklassen (Tailwind ergänzend) */
-@layer components {
-  .btn {
-    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50;
-  }
-  .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600;
-  }
-  .btn-secondary {
-    @apply btn border border-[rgb(var(--border))] bg-transparent hover:bg-[rgb(var(--muted))];
-  }
-  .input {
-    @apply w-full rounded-md border border-[rgb(var(--border))] bg-transparent px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
-  }
-  .card {
-    @apply rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--background))]/60 p-6 shadow-sm;
-  }
+/* Sanfter Uebergang beim Wechsel zwischen Hell/Dunkel (next-themes). */
+body,
+input,
+textarea,
+select,
+button {
+  transition: background-color 0.2s ease, color 0.2s ease;
 }

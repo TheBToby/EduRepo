@@ -6,6 +6,28 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardActionArea,
+  CardContent,
+  Chip,
+  Collapse,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import CallSplitIcon from '@mui/icons-material/CallSplit';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import { api, ApiError } from '../../../lib/api';
 import { Link } from '../../../i18n/navigation';
 
@@ -134,242 +156,292 @@ export default function MyRepositoriesPage() {
 
   const repoTitle = (r: { title: Record<string, string> }) => r.title?.de || r.title?.en || Object.values(r.title || {})[0] || '—';
 
-  if (error) return <p className="text-red-600">{error}</p>;
+  if (error) return <Alert severity="error">{error}</Alert>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{tNav('myRepos')}</h1>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-          + {t('create')}
-        </button>
-      </div>
+    <Stack spacing={3}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
+          {tNav('myRepos')}
+        </Typography>
+        <Button onClick={() => setShowForm(!showForm)} variant="contained" startIcon={<AddIcon />}>
+          {t('create')}
+        </Button>
+      </Box>
 
-      {showForm && (
-        <form onSubmit={createRepo} className="card space-y-4">
-          {/* Pflichtfelder */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('title')} *</label>
-              <input
-                className="input"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                minLength={2}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('access')}</label>
-              <select
-                className="input"
-                value={access}
-                onChange={(e) => setAccess(e.target.value as any)}
-              >
-                <option value="PUBLIC_DOWNLOAD">{t('publicDownload')}</option>
-                <option value="APPROVAL_REQUIRED">{t('approvalRequired')}</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('description')}</label>
-            <textarea
-              className="input"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
+      <Collapse in={showForm}>
+        <Card variant="outlined">
+          <CardContent>
+            <form onSubmit={createRepo}>
+              <Stack spacing={2.5}>
+                {/* Pflichtfelder */}
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label={`${t('title')} *`}
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      required
+                      slotProps={{ htmlInput: { minLength: 2 } }}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>{t('access')}</InputLabel>
+                      <Select
+                        label={t('access')}
+                        value={access}
+                        onChange={(e) => setAccess(e.target.value as any)}
+                      >
+                        <MenuItem value="PUBLIC_DOWNLOAD">{t('publicDownload')}</MenuItem>
+                        <MenuItem value="APPROVAL_REQUIRED">{t('approvalRequired')}</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+                <TextField
+                  label={t('description')}
+                  multiline
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  fullWidth
+                />
 
-          <h3 className="pt-2 font-semibold">{tMeta('metadataTitle')}</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('subject')}</label>
-              <select className="input" value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
-                <option value="">{tMeta('noSelection')}</option>
-                {subjects.map((s) => (
-                  <option key={s.id} value={s.id}>{s.labels?.de || s.key}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('schoolLevel')}</label>
-              <select className="input" value={schoolLevel} onChange={(e) => setSchoolLevel(e.target.value)}>
-                <option value="">{tMeta('noSelection')}</option>
-                {SCHOOL_LEVELS.map((l) => (
-                  <option key={l} value={l}>{tMeta(`levels.${l}`)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('language')}</label>
-              <select className="input" value={contentLanguage} onChange={(e) => setContentLanguage(e.target.value)}>
-                {CONTENT_LANGUAGES.map((l) => (
-                  <option key={l} value={l}>{tMeta(`langs.${l}`)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tMeta('materialType')}</label>
-              <select className="input" value={materialType} onChange={(e) => setMaterialType(e.target.value)}>
-                <option value="">{tMeta('noSelection')}</option>
-                {MATERIAL_TYPES.map((mt) => (
-                  <option key={mt} value={mt}>{tMeta(`types.${mt}`)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tMeta('educationSector')}</label>
-              <select className="input" value={educationSector} onChange={(e) => setEducationSector(e.target.value)}>
-                <option value="">{tMeta('noSelection')}</option>
-                <option value="GENERAL">{tMeta('sectors.GENERAL')}</option>
-                <option value="VOCATIONAL">{tMeta('sectors.VOCATIONAL')}</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('license')}</label>
-              <select className="input" value={license} onChange={(e) => setLicense(e.target.value)}>
-                <option value="">{tMeta('noSelection')}</option>
-                {LICENSES.map((l) => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+                <Typography variant="h6" component="h3" sx={{ pt: 1 }}>
+                  {tMeta('metadataTitle')}
+                </Typography>
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>{t('subject')}</InputLabel>
+                      <Select label={t('subject')} value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
+                        <MenuItem value="">{tMeta('noSelection')}</MenuItem>
+                        {subjects.map((s) => (
+                          <MenuItem key={s.id} value={s.id}>{s.labels?.de || s.key}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>{t('schoolLevel')}</InputLabel>
+                      <Select label={t('schoolLevel')} value={schoolLevel} onChange={(e) => setSchoolLevel(e.target.value)}>
+                        <MenuItem value="">{tMeta('noSelection')}</MenuItem>
+                        {SCHOOL_LEVELS.map((l) => (
+                          <MenuItem key={l} value={l}>{tMeta(`levels.${l}`)}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>{t('language')}</InputLabel>
+                      <Select
+                        label={t('language')}
+                        value={contentLanguage}
+                        onChange={(e) => setContentLanguage(e.target.value)}
+                      >
+                        {CONTENT_LANGUAGES.map((l) => (
+                          <MenuItem key={l} value={l}>{tMeta(`langs.${l}`)}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>{tMeta('materialType')}</InputLabel>
+                      <Select label={tMeta('materialType')} value={materialType} onChange={(e) => setMaterialType(e.target.value)}>
+                        <MenuItem value="">{tMeta('noSelection')}</MenuItem>
+                        {MATERIAL_TYPES.map((mt) => (
+                          <MenuItem key={mt} value={mt}>{tMeta(`types.${mt}`)}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>{tMeta('educationSector')}</InputLabel>
+                      <Select
+                        label={tMeta('educationSector')}
+                        value={educationSector}
+                        onChange={(e) => setEducationSector(e.target.value)}
+                      >
+                        <MenuItem value="">{tMeta('noSelection')}</MenuItem>
+                        <MenuItem value="GENERAL">{tMeta('sectors.GENERAL')}</MenuItem>
+                        <MenuItem value="VOCATIONAL">{tMeta('sectors.VOCATIONAL')}</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>{t('license')}</InputLabel>
+                      <Select label={t('license')} value={license} onChange={(e) => setLicense(e.target.value)}>
+                        <MenuItem value="">{tMeta('noSelection')}</MenuItem>
+                        {LICENSES.map((l) => (
+                          <MenuItem key={l} value={l}>{l}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
 
-          {/* Pädagogische Metadaten */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tMeta('curriculum21')}</label>
-              <input
-                className="input"
-                placeholder={tMeta('curriculum21Placeholder')}
-                value={curriculum21}
-                onChange={(e) => setCurriculum21(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tMeta('targetGroup')}</label>
-              <input
-                className="input"
-                placeholder={tMeta('targetGroupPlaceholder')}
-                value={targetGroup}
-                onChange={(e) => setTargetGroup(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tMeta('timeRequired')}</label>
-              <input
-                className="input"
-                placeholder={tMeta('timeRequiredPlaceholder')}
-                value={timeRequired}
-                onChange={(e) => setTimeRequired(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tMeta('difficulty')}</label>
-              <select className="input" value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-                <option value="">{tMeta('noSelection')}</option>
-                <option value="beginner">{tMeta('difficultyLevels.beginner')}</option>
-                <option value="intermediate">{tMeta('difficultyLevels.intermediate')}</option>
-                <option value="advanced">{tMeta('difficultyLevels.advanced')}</option>
-              </select>
-            </div>
-          </div>
+                {/* Pädagogische Metadaten */}
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label={tMeta('curriculum21')}
+                      placeholder={tMeta('curriculum21Placeholder')}
+                      value={curriculum21}
+                      onChange={(e) => setCurriculum21(e.target.value)}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label={tMeta('targetGroup')}
+                      placeholder={tMeta('targetGroupPlaceholder')}
+                      value={targetGroup}
+                      onChange={(e) => setTargetGroup(e.target.value)}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label={tMeta('timeRequired')}
+                      placeholder={tMeta('timeRequiredPlaceholder')}
+                      value={timeRequired}
+                      onChange={(e) => setTimeRequired(e.target.value)}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>{tMeta('difficulty')}</InputLabel>
+                      <Select label={tMeta('difficulty')} value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                        <MenuItem value="">{tMeta('noSelection')}</MenuItem>
+                        <MenuItem value="beginner">{tMeta('difficultyLevels.beginner')}</MenuItem>
+                        <MenuItem value="intermediate">{tMeta('difficultyLevels.intermediate')}</MenuItem>
+                        <MenuItem value="advanced">{tMeta('difficultyLevels.advanced')}</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
 
-          {/* Tags */}
-          {tags.length > 0 && (
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tMeta('tags')}</label>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => {
-                  const active = selectedTags.includes(tag.id);
-                  return (
-                    <button
-                      type="button"
-                      key={tag.id}
-                      onClick={() => toggleTag(tag.id)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                        active
-                          ? 'bg-brand-600 text-white'
-                          : 'bg-[rgb(var(--muted))] text-[rgb(var(--foreground))]/70 hover:opacity-80'
-                      }`}
-                    >
-                      {tag.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                {/* Tags */}
+                {tags.length > 0 && (
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
+                      {tMeta('tags')}
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {tags.map((tag) => {
+                        const active = selectedTags.includes(tag.id);
+                        return (
+                          <Chip
+                            key={tag.id}
+                            label={tag.name}
+                            onClick={() => toggleTag(tag.id)}
+                            color={active ? 'primary' : 'default'}
+                            variant={active ? 'filled' : 'outlined'}
+                            size="small"
+                          />
+                        );
+                      })}
+                    </Box>
+                  </Box>
+                )}
 
-          {/* Hierarchie: Master-Repository wählen */}
-          <div>
-            <label className="mb-1 block text-sm font-medium">{tMeta('parentRepo')}</label>
-            <select className="input" value={parentId} onChange={(e) => setParentId(e.target.value)}>
-              <option value="">{tMeta('noParent')}</option>
-              {items.filter((r) => !r.parentId).map((r) => (
-                <option key={r.id} value={r.id}>
-                  {repoTitle(r)} {r.isFork ? '(Fork)' : ''}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-[rgb(var(--foreground))]/50">{tMeta('parentRepoHint')}</p>
-          </div>
+                {/* Hierarchie: Master-Repository wählen */}
+                <Box>
+                  <FormControl fullWidth>
+                    <InputLabel>{tMeta('parentRepo')}</InputLabel>
+                    <Select label={tMeta('parentRepo')} value={parentId} onChange={(e) => setParentId(e.target.value)}>
+                      <MenuItem value="">{tMeta('noParent')}</MenuItem>
+                      {items.filter((r) => !r.parentId).map((r) => (
+                        <MenuItem key={r.id} value={r.id}>
+                          {repoTitle(r)} {r.isFork ? '(Fork)' : ''}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    {tMeta('parentRepoHint')}
+                  </Typography>
+                </Box>
 
-          <div className="flex gap-2">
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? tCommon('loading') : tCommon('save')}
-            </button>
-            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">
-              {tCommon('cancel')}
-            </button>
-          </div>
-        </form>
-      )}
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button type="submit" variant="contained" disabled={saving}>
+                    {saving ? tCommon('loading') : tCommon('save')}
+                  </Button>
+                  <Button type="button" onClick={() => setShowForm(false)} variant="outlined">
+                    {tCommon('cancel')}
+                  </Button>
+                </Box>
+              </Stack>
+            </form>
+          </CardContent>
+        </Card>
+      </Collapse>
 
       {loading ? (
-        <p>{tCommon('loading')}</p>
+        <Typography color="text.secondary">{tCommon('loading')}</Typography>
       ) : items.length === 0 ? (
-        <p className="text-[rgb(var(--foreground))]/60">{t('emptyMine')}</p>
+        <Typography color="text.secondary">{t('emptyMine')}</Typography>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' } }}>
           {items.map((item) => (
-            <Link key={item.id} href={`/repositories/${item.id}`} className="card hover:border-brand-500">
-              <h3 className="mb-2 font-semibold">
-                {item.isFork && <span className="mr-1 text-xs" aria-hidden>🍴</span>}
-                {item.parentId && <span className="mr-1 text-xs" aria-hidden>📦</span>}
-                {repoTitle(item)}
-              </h3>
-              <p className="mb-3 line-clamp-2 text-sm text-[rgb(var(--foreground))]/70">
-                {item.description?.de || item.description?.en || ''}
-              </p>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">
-                  {item.contentLanguage}
-                </span>
-                <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">
-                  {item.access === 'PUBLIC_DOWNLOAD' ? t('publicDownload') : t('approvalRequired')}
-                </span>
-                {item.parentId && (
-                  <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">{tMeta('subRepoBadge')}</span>
-                )}
-                {(item._count?.issues ?? 0) > 0 && (
-                  <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">
-                    🐛 {item._count?.issues}
-                  </span>
-                )}
-                {(item._count?.pullRequestsTo ?? 0) > 0 && (
-                  <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">
-                    🔀 {item._count?.pullRequestsTo}
-                  </span>
-                )}
-              </div>
-              <p className="mt-3 text-xs text-[rgb(var(--foreground))]/50">von {item.owner.displayName}</p>
-            </Link>
+            <Card key={item.id} variant="outlined" sx={{ height: '100%' }}>
+              <CardActionArea
+                component={Link}
+                href={`/repositories/${item.id}`}
+                sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+              >
+                <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {item.isFork && <CallSplitIcon fontSize="small" />}
+                    {item.parentId && <Inventory2Icon fontSize="small" />}
+                    {repoTitle(item)}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      mb: 2,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {item.description?.de || item.description?.en || ''}
+                  </Typography>
+                  <Box sx={{ mt: 'auto' }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1.5 }}>
+                      <Chip label={item.contentLanguage} size="small" />
+                      <Chip
+                        label={item.access === 'PUBLIC_DOWNLOAD' ? t('publicDownload') : t('approvalRequired')}
+                        size="small"
+                      />
+                      {item.parentId && <Chip label={tMeta('subRepoBadge')} size="small" />}
+                      {(item._count?.issues ?? 0) > 0 && (
+                        <Chip icon={<BugReportIcon style={{ fontSize: 14 }} />} label={item._count?.issues} size="small" variant="outlined" />
+                      )}
+                      {(item._count?.pullRequestsTo ?? 0) > 0 && (
+                        <Chip icon={<CallSplitIcon style={{ fontSize: 14 }} />} label={item._count?.pullRequestsTo} size="small" variant="outlined" />
+                      )}
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      von {item.owner.displayName}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </CardActionArea>
+            </Card>
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Stack>
   );
 }

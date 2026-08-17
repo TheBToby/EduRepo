@@ -1,11 +1,36 @@
 'use client';
 
-// Admin-Bereich: Nutzer direkt anlegen (ohne Registrierungsanfrage),
+// Admin-Bereich (MUI): Nutzer direkt anlegen (ohne Registrierungsanfrage),
 // Registrierungen freigeben und Nutzer verwalten (aktivieren, sperren,
 // deaktivieren, löschen mit Kulanzfrist, Profil einsehen).
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Collapse,
+  FormControl,
+  InputLabel,
+  Link as MuiLink,
+  MenuItem,
+  Select,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { api, ApiError } from '../../../lib/api';
 import { Link } from '../../../i18n/navigation';
 
@@ -27,21 +52,21 @@ function retentionDaysLeft(permanentDeleteAt?: string | null): number | null {
   return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
 }
 
-/** Farbklasse für Status-Badges inkl. laufender Kulanzfrist. */
-function statusBadgeClass(status: string): string {
+/** Chip-Farbe für Status-Badges. */
+function statusChipColor(status: string): 'success' | 'info' | 'error' | 'warning' | 'default' {
   switch (status) {
     case 'ACTIVE':
-      return 'bg-green-100 text-green-700';
+      return 'success';
     case 'PENDING':
-      return 'bg-blue-100 text-blue-700';
+      return 'info';
     case 'SOFT_DELETED':
-      return 'bg-red-100 text-red-700';
+      return 'error';
     case 'LOCKED':
-      return 'bg-orange-100 text-orange-700';
+      return 'warning';
     case 'DEACTIVATED':
-      return 'bg-gray-200 text-gray-700';
+      return 'default';
     default:
-      return 'bg-[rgb(var(--muted))]';
+      return 'default';
   }
 }
 
@@ -63,6 +88,7 @@ export default function AdminPage() {
   const [newRole, setNewRole] = useState<'USER' | 'MODERATOR' | 'ADMIN'>('USER');
   const [creating, setCreating] = useState(false);
   const [createMsg, setCreateMsg] = useState<string | null>(null);
+  const [createMsgOk, setCreateMsgOk] = useState(true);
 
   const load = async () => {
     try {
@@ -93,6 +119,7 @@ export default function AdminPage() {
         password: newPassword || undefined,
         role: newRole,
       });
+      setCreateMsgOk(true);
       setCreateMsg('✓ ' + t('userCreated', { email: newEmail }));
       setNewEmail('');
       setNewName('');
@@ -100,6 +127,7 @@ export default function AdminPage() {
       setNewRole('USER');
       load();
     } catch (err: any) {
+      setCreateMsgOk(false);
       setCreateMsg('✗ ' + (err.message || 'Fehler.'));
     } finally {
       setCreating(false);
@@ -157,209 +185,217 @@ export default function AdminPage() {
     load();
   };
 
-  if (error) return <p className="text-red-600">{error}</p>;
+  if (error) return <Alert severity="error">{error}</Alert>;
 
   return (
-    <div className="space-y-8">
+    <Stack spacing={4}>
       {/* Nutzer direkt anlegen */}
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{t('createUserTitle')}</h1>
-          <button onClick={() => setShowCreate(!showCreate)} className="btn-primary">
-            + {t('createUser')}
-          </button>
-        </div>
+      <Box>
+        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
+            {t('createUserTitle')}
+          </Typography>
+          <Button onClick={() => setShowCreate(!showCreate)} variant="contained" startIcon={<AddIcon />}>
+            {t('createUser')}
+          </Button>
+        </Box>
 
-        {showCreate && (
-          <form onSubmit={createUser} className="card mb-4 space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tAuth('registerName')}</label>
-              <input
-                className="input"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                required
-                minLength={2}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tAuth('registerEmail')}</label>
-              <input
-                type="email"
-                className="input"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tAuth('registerPassword')}</label>
-              <input
-                type="text"
-                className="input"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder={t('passwordOptional')}
-                minLength={8}
-              />
-              <p className="mt-1 text-xs text-[rgb(var(--foreground))]/50">{t('passwordHint')}</p>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('setRole')}</label>
-              <select
-                className="input"
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value as any)}
-              >
-                <option value="USER">USER</option>
-                <option value="MODERATOR">MODERATOR</option>
-                <option value="ADMIN">ADMIN</option>
-              </select>
-            </div>
-            {createMsg && <p className="text-sm">{createMsg}</p>}
-            <div className="flex gap-2">
-              <button type="submit" className="btn-primary" disabled={creating}>
-                {creating ? tCommon('loading') : t('createUser')}
-              </button>
-              <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">
-                {tCommon('cancel')}
-              </button>
-            </div>
-          </form>
-        )}
-      </section>
+        <Collapse in={showCreate}>
+          <Card variant="outlined" sx={{ mb: 2 }}>
+            <CardContent>
+              <form onSubmit={createUser}>
+                <Stack spacing={2.5}>
+                  <TextField
+                    label={tAuth('registerName')}
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    required
+                    slotProps={{ htmlInput: { minLength: 2 } }}
+                    fullWidth
+                  />
+                  <TextField
+                    type="email"
+                    label={tAuth('registerEmail')}
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    required
+                    fullWidth
+                  />
+                  <Box>
+                    <TextField
+                      type="text"
+                      label={tAuth('registerPassword')}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder={t('passwordOptional')}
+                      slotProps={{ htmlInput: { minLength: 8 } }}
+                      fullWidth
+                    />
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                      {t('passwordHint')}
+                    </Typography>
+                  </Box>
+                  <FormControl fullWidth>
+                    <InputLabel>{t('setRole')}</InputLabel>
+                    <Select label={t('setRole')} value={newRole} onChange={(e) => setNewRole(e.target.value as any)}>
+                      <MenuItem value="USER">USER</MenuItem>
+                      <MenuItem value="MODERATOR">MODERATOR</MenuItem>
+                      <MenuItem value="ADMIN">ADMIN</MenuItem>
+                    </Select>
+                  </FormControl>
+                  {createMsg && <Alert severity={createMsgOk ? 'success' : 'error'}>{createMsg}</Alert>}
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button type="submit" variant="contained" disabled={creating} startIcon={<PersonAddIcon />}>
+                      {creating ? tCommon('loading') : t('createUser')}
+                    </Button>
+                    <Button type="button" onClick={() => setShowCreate(false)} variant="outlined">
+                      {tCommon('cancel')}
+                    </Button>
+                  </Box>
+                </Stack>
+              </form>
+            </CardContent>
+          </Card>
+        </Collapse>
+      </Box>
 
       {/* Ausstehende Registrierungen */}
-      <section>
-        <h2 className="mb-4 text-xl font-bold">{t('pendingUsers')} ({pending.length})</h2>
+      <Box>
+        <Typography variant="h5" component="h2" sx={{ fontWeight: 700, mb: 2 }}>
+          {t('pendingUsers')} ({pending.length})
+        </Typography>
         {pending.length === 0 ? (
-          <p className="text-sm text-[rgb(var(--foreground))]/60">{t('noPending')}</p>
+          <Typography variant="body2" color="text.secondary">{t('noPending')}</Typography>
         ) : (
-          <div className="space-y-2">
+          <Stack spacing={1.5}>
             {pending.map((u) => (
-              <div key={u.id} className="card flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{u.displayName}</p>
-                  <p className="text-sm text-[rgb(var(--foreground))]/60">{u.email}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => approve(u.id)} className="btn-primary text-sm">
-                    {t('approve')}
-                  </button>
-                  <button onClick={() => reject(u.id)} className="btn-secondary text-sm text-red-600">
-                    {t('reject')}
-                  </button>
-                </div>
-              </div>
+              <Card key={u.id} variant="outlined">
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, px: 2, py: 1.5 }}>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{u.displayName}</Typography>
+                    <Typography variant="body2" color="text.secondary">{u.email}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button onClick={() => approve(u.id)} variant="contained" size="small">
+                      {t('approve')}
+                    </Button>
+                    <Button onClick={() => reject(u.id)} variant="outlined" size="small" color="error">
+                      {t('reject')}
+                    </Button>
+                  </Box>
+                </Box>
+              </Card>
             ))}
-          </div>
+          </Stack>
         )}
-      </section>
+      </Box>
 
       {/* Alle Nutzer */}
-      <section>
-        <h2 className="mb-4 text-xl font-bold">{t('users')}</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[rgb(var(--border))] text-left">
-                <th className="py-2">{tAuth('registerName')}</th>
-                <th className="py-2">{tAuth('registerEmail')}</th>
-                <th className="py-2">{t('setRole')}</th>
-                <th className="py-2">{t('status')}</th>
-                <th className="py-2">{t('actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
+      <Box>
+        <Typography variant="h5" component="h2" sx={{ fontWeight: 700, mb: 2 }}>
+          {t('users')}
+        </Typography>
+        <TableContainer component={Card} variant="outlined">
+          <Table sx={{ minWidth: 650 }} size="small" aria-label={t('users')}>
+            <TableHead>
+              <TableRow>
+                <TableCell>{tAuth('registerName')}</TableCell>
+                <TableCell>{tAuth('registerEmail')}</TableCell>
+                <TableCell>{t('setRole')}</TableCell>
+                <TableCell>{t('status')}</TableCell>
+                <TableCell>{t('actions')}</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {users.map((u) => {
                 const retention = retentionDaysLeft(u.permanentDeleteAt);
                 return (
-                  <tr key={u.id} className="border-b border-[rgb(var(--border))]/50">
+                  <TableRow key={u.id} hover>
                     {/* Klick auf Name => Profil des Nutzers */}
-                    <td className="py-2">
-                      <Link
-                        href={`/admin/users/${u.id}`}
-                        className="font-medium text-brand-600 hover:underline"
-                      >
+                    <TableCell>
+                      <MuiLink component={Link} href={`/admin/users/${u.id}`} fontWeight={600} underline="hover">
                         {u.displayName}
-                      </Link>
-                    </td>
-                    <td className="py-2">{u.email}</td>
-                    <td className="py-2">
+                      </MuiLink>
+                    </TableCell>
+                    <TableCell>{u.email}</TableCell>
+                    <TableCell>
                       {u.role === 'ADMIN' ? (
                         u.role
                       ) : (
-                        <select
-                          className="input py-1 text-xs"
+                        <Select
+                          size="small"
                           value={u.role}
                           onChange={(e) => changeRole(u.id, e.target.value)}
+                          sx={{ minWidth: 130, fontSize: '0.8rem' }}
                         >
-                          <option value="USER">USER</option>
-                          <option value="MODERATOR">MODERATOR</option>
-                          <option value="ADMIN">ADMIN</option>
-                        </select>
+                          <MenuItem value="USER">USER</MenuItem>
+                          <MenuItem value="MODERATOR">MODERATOR</MenuItem>
+                          <MenuItem value="ADMIN">ADMIN</MenuItem>
+                        </Select>
                       )}
-                    </td>
-                    <td className="py-2">
-                      <div className="flex flex-col gap-1">
-                        <span className={`rounded px-2 py-1 text-xs ${statusBadgeClass(u.status)}`}>
-                          {u.status}
-                        </span>
+                    </TableCell>
+                    <TableCell>
+                      <Stack spacing={0.5} alignItems="flex-start">
+                        <Chip label={u.status} size="small" color={statusChipColor(u.status)} />
                         {/* Laufende Kulanzfrist anzeigen */}
                         {retention !== null && (
-                          <span className="rounded bg-red-100 px-2 py-1 text-xs text-red-700">
-                            ⏳ {t('retentionRunning', { days: retention })}
-                          </span>
+                          <Chip label={`⏳ ${t('retentionRunning', { days: retention })}`} size="small" color="error" variant="outlined" />
                         )}
-                      </div>
-                    </td>
-                    <td className="py-2">
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
                       {u.role !== 'ADMIN' && (
-                        <div className="flex flex-wrap gap-1">
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                           {(u.status === 'DEACTIVATED' || u.status === 'LOCKED') && (
-                            <button
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="success"
                               onClick={() => setStatus(u.id, 'ACTIVE')}
-                              className="rounded bg-green-100 px-2 py-1 text-xs text-green-700 hover:opacity-80"
                               disabled={busyId === u.id}
                             >
                               ✓ {t('activate')}
-                            </button>
+                            </Button>
                           )}
                           {u.status === 'ACTIVE' && (
                             <>
-                              <button
+                              <Button
+                                size="small"
+                                variant="outlined"
                                 onClick={() => setStatus(u.id, 'LOCKED')}
-                                className="rounded bg-[rgb(var(--muted))] px-2 py-1 text-xs hover:opacity-80"
                                 disabled={busyId === u.id}
                               >
                                 🔒 {t('lock')}
-                              </button>
-                              <button
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
                                 onClick={() => setStatus(u.id, 'DEACTIVATED')}
-                                className="rounded bg-[rgb(var(--muted))] px-2 py-1 text-xs hover:opacity-80"
                                 disabled={busyId === u.id}
                               >
                                 ⏸ {t('deactivate')}
-                              </button>
-                              <button
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
                                 onClick={() => deleteUserWithRetention(u)}
-                                className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:opacity-80"
                                 disabled={busyId === u.id}
                               >
                                 🗑 {t('deleteUser')}
-                              </button>
+                              </Button>
                             </>
                           )}
-                        </div>
+                        </Box>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    </Stack>
   );
 }

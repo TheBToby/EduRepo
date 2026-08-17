@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Box, Button, Card, CardActionArea, CardContent, Chip, InputAdornment, Stack, TextField, Typography } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import { api } from '../../../lib/api';
 import { Link } from '../../../i18n/navigation';
 
@@ -38,43 +40,75 @@ export default function BrowsePage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex gap-2">
-        <input
-          className="input"
+    <Stack spacing={3}>
+      <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+        <TextField
           placeholder={tCommon('search')}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && search()}
+          sx={{ flexGrow: 1, minWidth: 240 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
         />
-        <button onClick={search} className="btn-primary">{tCommon('search')}</button>
-      </div>
+        <Button onClick={search} variant="contained" disabled={loading}>
+          {loading ? tCommon('loading') : tCommon('search')}
+        </Button>
+      </Box>
 
       {loading ? (
-        <p>{tCommon('loading')}</p>
+        <Typography color="text.secondary">{tCommon('loading')}</Typography>
       ) : items.length === 0 ? (
-        <p className="text-[rgb(var(--foreground))]/60">Keine Lehrmittel gefunden.</p>
+        <Typography color="text.secondary">Keine Lehrmittel gefunden.</Typography>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' } }}>
           {items.map((item) => (
-            <Link key={item.id} href={`/repositories/${item.id}`} className="card hover:border-brand-500">
-              <h3 className="mb-2 font-semibold">{item.title.de || item.title.en || '—'}</h3>
-              <p className="mb-3 line-clamp-2 text-sm text-[rgb(var(--foreground))]/70">
-                {item.description.de || item.description.en || ''}
-              </p>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">
-                  {item.contentLanguage}
-                </span>
-                <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">
-                  {item.access === 'PUBLIC_DOWNLOAD' ? t('publicDownload') : t('approvalRequired')}
-                </span>
-              </div>
-              <p className="mt-3 text-xs text-[rgb(var(--foreground))]/50">von {item.owner.displayName}</p>
-            </Link>
+            <Card key={item.id} variant="outlined" sx={{ height: '100%' }}>
+              <CardActionArea
+                component={Link}
+                href={`/repositories/${item.id}`}
+                sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+              >
+                <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                    {item.title.de || item.title.en || '—'}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      mb: 2,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {item.description.de || item.description.en || ''}
+                  </Typography>
+                  <Box sx={{ mt: 'auto' }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1.5 }}>
+                      <Chip label={item.contentLanguage} size="small" />
+                      <Chip
+                        label={item.access === 'PUBLIC_DOWNLOAD' ? t('publicDownload') : t('approvalRequired')}
+                        size="small"
+                      />
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      von {item.owner.displayName}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </CardActionArea>
+            </Card>
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Stack>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-// Lehrmittel-Detailseite im GitHub-Stil:
+// Lehrmittel-Detailseite im GitHub-Stil (MUI):
 // - Übersicht mit Metadaten (editierbar für Mitglieder)
 // - Dateien & Versionen inkl. Upload und neuer Versionen
 // - Issues mit Kommentaren (Schliessen/Öffnen)
@@ -10,6 +10,45 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardActionArea,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Collapse,
+  Divider,
+  FormControl,
+  Grid,
+  IconButton,
+  InputLabel,
+  Link as MuiLink,
+  MenuItem,
+  Select,
+  Stack,
+  Tab,
+  Tabs,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import CallSplitIcon from '@mui/icons-material/CallSplit';
+import EditIcon from '@mui/icons-material/Edit';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import DownloadIcon from '@mui/icons-material/Download';
+import DeleteIcon from '@mui/icons-material/Delete';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import MergeIcon from '@mui/icons-material/Merge';
 import { api, ApiError } from '../../../../lib/api';
 import { Link } from '../../../../i18n/navigation';
 import { useSession } from '../../../../components/SessionProvider';
@@ -108,6 +147,7 @@ export default function RepositoryDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [msg, setMsg] = useState<string | null>(null);
+  const [msgSeverity, setMsgSeverity] = useState<'success' | 'error'>('success');
   const [busy, setBusy] = useState(false);
 
   // Sterne
@@ -145,6 +185,11 @@ export default function RepositoryDetailPage() {
 
   const isMember = !!repo && (repo.ownerId === user?.id || repo.members.some((m) => m.userId === user?.id));
   const isOwner = !!repo && repo.ownerId === user?.id;
+
+  const flash = (text: string, ok: boolean) => {
+    setMsgSeverity(ok ? 'success' : 'error');
+    setMsg(text);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -212,7 +257,7 @@ export default function RepositoryDetailPage() {
       const res = await api.post<{ starred: boolean; stars: number }>(`/repositories/${params.id}/star`);
       setStarred(res.starred);
       setStarCount(res.stars);
-    } catch (err: any) { setMsg('✗ ' + err.message); }
+    } catch (err: any) { flash('✗ ' + err.message, false); }
   };
 
   const saveEdit = async (e: React.FormEvent) => {
@@ -239,10 +284,10 @@ export default function RepositoryDetailPage() {
         prerequisites: form.prerequisites || null,
       });
       setEditMode(false);
-      setMsg('✓ ' + t('updated'));
+      flash('✓ ' + t('updated'), true);
       load();
     } catch (err: any) {
-      setMsg('✗ ' + err.message);
+      flash('✗ ' + err.message, false);
     } finally {
       setBusy(false);
     }
@@ -255,9 +300,9 @@ export default function RepositoryDetailPage() {
         changeNote: newVersionNote || undefined,
       });
       setNewVersionNote('');
-      setMsg('✓ ' + t('versionCreated'));
+      flash('✓ ' + t('versionCreated'), true);
       load();
-    } catch (err: any) { setMsg('✗ ' + err.message); } finally { setBusy(false); }
+    } catch (err: any) { flash('✗ ' + err.message, false); } finally { setBusy(false); }
   };
 
   const uploadFile = async (file: File) => {
@@ -267,10 +312,10 @@ export default function RepositoryDetailPage() {
       const formData = new FormData();
       formData.append('file', file);
       await api.upload(`/repositories/${params.id}/versions/${uploadVersionId}/files`, formData);
-      setMsg('✓ ' + t('fileUploaded', { name: file.name }));
+      flash('✓ ' + t('fileUploaded', { name: file.name }), true);
       load();
     } catch (err: any) {
-      setMsg('✗ ' + (err.message || 'Upload fehlgeschlagen.'));
+      flash('✗ ' + (err.message || 'Upload fehlgeschlagen.'), false);
     } finally {
       setBusy(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -283,7 +328,7 @@ export default function RepositoryDetailPage() {
         `/repositories/${params.id}/versions/${versionId}/files/${fileId}/download`,
       );
       window.open(res.url, '_blank', 'noopener');
-    } catch (err: any) { setMsg('✗ ' + (err.message || 'Download fehlgeschlagen.')); }
+    } catch (err: any) { flash('✗ ' + (err.message || 'Download fehlgeschlagen.'), false); }
   };
 
   const deleteFile = async (versionId: string, fileId: string) => {
@@ -291,7 +336,7 @@ export default function RepositoryDetailPage() {
     try {
       await api.delete(`/repositories/${params.id}/versions/${versionId}/files/${fileId}`);
       load();
-    } catch (err: any) { setMsg('✗ ' + err.message); } finally { setBusy(false); }
+    } catch (err: any) { flash('✗ ' + err.message, false); } finally { setBusy(false); }
   };
 
   const fork = async () => {
@@ -299,7 +344,7 @@ export default function RepositoryDetailPage() {
     try {
       const res = await api.post<{ id: string }>(`/repositories/${params.id}/fork`);
       router.push(`/repositories/${res.id}`);
-    } catch (err: any) { setMsg('✗ ' + err.message); } finally { setBusy(false); }
+    } catch (err: any) { flash('✗ ' + err.message, false); } finally { setBusy(false); }
   };
 
   // Issues
@@ -316,7 +361,7 @@ export default function RepositoryDetailPage() {
       setIssueDesc('');
       loadIssues();
       load();
-    } catch (err: any) { setMsg('✗ ' + err.message); } finally { setBusy(false); }
+    } catch (err: any) { flash('✗ ' + err.message, false); } finally { setBusy(false); }
   };
 
   const toggleIssue = async (issue: Issue) => {
@@ -327,14 +372,14 @@ export default function RepositoryDetailPage() {
       if (openIssue?.number === issue.number) {
         setOpenIssue({ ...issue, status: close ? 'CLOSED' : 'OPEN' });
       }
-    } catch (err: any) { setMsg('✗ ' + err.message); }
+    } catch (err: any) { flash('✗ ' + err.message, false); }
   };
 
   const openIssueDetail = async (number: number) => {
     try {
       const res = await api.get<Issue>(`/repositories/${params.id}/issues/${number}`);
       setOpenIssue(res);
-    } catch (err: any) { setMsg('✗ ' + err.message); }
+    } catch (err: any) { flash('✗ ' + err.message, false); }
   };
 
   const addComment = async (number: number) => {
@@ -348,7 +393,7 @@ export default function RepositoryDetailPage() {
         prev ? { ...prev, comments: [...(prev.comments || []), res] } : prev,
       );
       loadIssues();
-    } catch (err: any) { setMsg('✗ ' + err.message); }
+    } catch (err: any) { flash('✗ ' + err.message, false); }
   };
 
   // Pull Requests
@@ -367,7 +412,7 @@ export default function RepositoryDetailPage() {
       setPrDesc('');
       loadPrs();
       load();
-    } catch (err: any) { setMsg('✗ ' + err.message); } finally { setBusy(false); }
+    } catch (err: any) { flash('✗ ' + err.message, false); } finally { setBusy(false); }
   };
 
   const mergePr = async (pr: PullRequest) => {
@@ -377,8 +422,8 @@ export default function RepositoryDetailPage() {
       await api.post(`/repositories/${params.id}/pull-requests/${pr.number}/merge`, {});
       loadPrs();
       load();
-      setMsg('✓ ' + tPrs('merged'));
-    } catch (err: any) { setMsg('✗ ' + err.message); } finally { setBusy(false); }
+      flash('✓ ' + tPrs('merged'), true);
+    } catch (err: any) { flash('✗ ' + err.message, false); } finally { setBusy(false); }
   };
 
   const closePr = async (pr: PullRequest) => {
@@ -386,7 +431,7 @@ export default function RepositoryDetailPage() {
     try {
       await api.post(`/repositories/${params.id}/pull-requests/${pr.number}/close`, {});
       loadPrs();
-    } catch (err: any) { setMsg('✗ ' + err.message); } finally { setBusy(false); }
+    } catch (err: any) { flash('✗ ' + err.message, false); } finally { setBusy(false); }
   };
 
   // Mitglieder
@@ -399,32 +444,40 @@ export default function RepositoryDetailPage() {
       });
       setMemberUserId('');
       load();
-    } catch (err: any) { setMsg('✗ ' + err.message); }
+    } catch (err: any) { flash('✗ ' + err.message, false); }
   };
 
   const removeMember = async (userId: string) => {
     try {
       await api.delete(`/repositories/${params.id}/members/${userId}`);
       load();
-    } catch (err: any) { setMsg('✗ ' + err.message); }
+    } catch (err: any) { flash('✗ ' + err.message, false); }
   };
 
   const grantAccess = async (userId: string) => {
     try {
       await api.post(`/repositories/${params.id}/grant-access`, { userId });
       load();
-    } catch (err: any) { setMsg('✗ ' + err.message); }
+    } catch (err: any) { flash('✗ ' + err.message, false); }
   };
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <p className="text-red-600">{error}</p>
-        <Link href="/repositories" className="btn-secondary">← {t('backToMine')}</Link>
-      </div>
+      <Stack spacing={2}>
+        <Alert severity="error">{error}</Alert>
+        <Button component={Link} href="/repositories" variant="outlined">
+          ← {t('backToMine')}
+        </Button>
+      </Stack>
     );
   }
-  if (!repo) return <p>{tCommon('loading')}</p>;
+  if (!repo) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   const title = jsonTitle(repo.title);
   const description = jsonTitle(repo.description);
@@ -440,575 +493,719 @@ export default function RepositoryDetailPage() {
     { key: 'children', label: t('tabChildren'), count: repo.children?.length ?? 0 },
   ];
 
-  const inputField = (key: string, label: string, opts?: { type?: string; options?: Array<[string, string]>; placeholder?: string; rows?: number }) => (
-    <div>
-      <label className="mb-1 block text-sm font-medium">{label}</label>
-      {opts?.options ? (
-        <select
-          className="input"
-          value={form[key] ?? ''}
-          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-        >
-          {opts.options.map(([v, l]) => (
-            <option key={v} value={v}>{l}</option>
-          ))}
-        </select>
-      ) : opts?.rows ? (
-        <textarea
-          className="input"
+  const inputField = (
+    key: string,
+    label: string,
+    opts?: { type?: string; options?: Array<[string, string]>; placeholder?: string; rows?: number },
+  ) => {
+    if (opts?.options) {
+      return (
+        <FormControl fullWidth key={key}>
+          <InputLabel>{label}</InputLabel>
+          <Select
+            label={label}
+            value={form[key] ?? ''}
+            onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+          >
+            {opts.options.map(([v, l]) => (
+              <MenuItem key={v} value={v}>{l}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      );
+    }
+    if (opts?.rows) {
+      return (
+        <TextField
+          key={key}
+          label={label}
+          multiline
           rows={opts.rows}
           placeholder={opts?.placeholder}
           value={form[key] ?? ''}
           onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+          fullWidth
         />
-      ) : (
-        <input
-          className="input"
-          type={opts?.type}
-          placeholder={opts?.placeholder}
-          value={form[key] ?? ''}
-          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-        />
-      )}
-    </div>
-  );
+      );
+    }
+    return (
+      <TextField
+        key={key}
+        label={label}
+        type={opts?.type}
+        placeholder={opts?.placeholder}
+        value={form[key] ?? ''}
+        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+        fullWidth
+      />
+    );
+  };
 
   return (
-    <div className="space-y-6">
+    <Stack spacing={3}>
       {/* Kopf */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+        <Box>
           {/* Breadcrumb: Master → Sub */}
-          <p className="mb-1 text-xs text-[rgb(var(--foreground))]/50">
-            {repo.parent ? (
+          <Box sx={{ mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }} aria-label="breadcrumb">
+            {repo.parent && (
               <>
-                📦 <Link href={`/repositories/${repo.parent.id}`} className="underline">{jsonTitle(repo.parent.title)}</Link>
-                {' / '}
+                <Inventory2Icon fontSize="small" sx={{ color: 'text.secondary' }} />
+                <MuiLink component={Link} href={`/repositories/${repo.parent.id}`} variant="caption" underline="hover">
+                  {jsonTitle(repo.parent.title)}
+                </MuiLink>
+                <Typography variant="caption" color="text.secondary">/</Typography>
               </>
-            ) : null}
+            )}
             {repo.isFork && repo.forkedFromId && (
               <>
-                🍴 <Link href={`/repositories/${repo.forkedFromId}`} className="underline">{t('fork')}</Link>
-                {' · '}
+                <CallSplitIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                <MuiLink component={Link} href={`/repositories/${repo.forkedFromId}`} variant="caption" underline="hover">
+                  {t('fork')}
+                </MuiLink>
+                <Typography variant="caption" color="text.secondary">·</Typography>
               </>
             )}
-          </p>
-          <h1 className="text-2xl font-bold">
-            {repo.parentId && <span className="mr-1 text-lg" aria-hidden>📦</span>}
-            {repo.isFork && <span className="mr-1 text-lg" aria-hidden>🍴</span>}
+          </Box>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+            {repo.parentId && <Inventory2Icon sx={{ fontSize: 28, color: 'text.secondary' }} />}
+            {repo.isFork && <CallSplitIcon sx={{ fontSize: 28, color: 'text.secondary' }} />}
             {title}
-          </h1>
-          <p className="mt-1 text-sm text-[rgb(var(--foreground))]/60">
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             {repo.owner.displayName} · {new Date(repo.updatedAt).toLocaleDateString()}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={toggleStar} className="btn-secondary" title={t('star')}>
-            {starred ? '⭐' : '☆'} {starCount}
-          </button>
-          <button onClick={fork} className="btn-secondary" disabled={busy}>
-            🍴 {t('fork')}
-          </button>
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Tooltip title={t('star')}>
+            <Button onClick={toggleStar} variant="outlined" startIcon={starred ? <StarIcon /> : <StarBorderIcon />}>
+              {starCount}
+            </Button>
+          </Tooltip>
+          <Button onClick={fork} variant="outlined" disabled={busy} startIcon={<CallSplitIcon />}>
+            {t('fork')}
+          </Button>
           {isMember && !editMode && (
-            <button onClick={() => setEditMode(true)} className="btn-primary">
-              ✏️ {tCommon('edit')}
-            </button>
+            <Button onClick={() => setEditMode(true)} variant="contained" startIcon={<EditIcon />}>
+              {tCommon('edit')}
+            </Button>
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-1 border-b border-[rgb(var(--border))]">
+      <Tabs
+        value={tab}
+        onChange={(_, v: Tab) => setTab(v)}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{ borderBottom: 1, borderColor: 'divider' }}
+      >
         {TABS.map((tb) => (
-          <button
+          <Tab
             key={tb.key}
-            onClick={() => setTab(tb.key)}
-            className={`-mb-px rounded-t-lg border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-              tab === tb.key
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-[rgb(var(--foreground))]/60 hover:text-[rgb(var(--foreground))]'
-            }`}
-          >
-            {tb.label}
-            {tb.count !== undefined && tb.count > 0 && (
-              <span className="ml-1 rounded-full bg-[rgb(var(--muted))] px-1.5 text-xs">{tb.count}</span>
-            )}
-          </button>
+            value={tb.key}
+            label={
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {tb.label}
+                {tb.count !== undefined && tb.count > 0 && (
+                  <Chip label={tb.count} size="small" sx={{ height: 18, fontSize: '0.7rem' }} />
+                )}
+              </span>
+            }
+            sx={{ minHeight: 44, textTransform: 'none', fontWeight: 500 }}
+          />
         ))}
-      </div>
+      </Tabs>
 
-      {msg && <p className="text-sm">{msg}</p>}
+      {msg && <Alert severity={msgSeverity}>{msg}</Alert>}
 
       {/* =========================== Übersicht =========================== */}
       {tab === 'overview' && !editMode && (
-        <section className="card space-y-3">
-          <p className="whitespace-pre-wrap text-sm">{description || '—'}</p>
-          <div className="flex flex-wrap gap-2 text-xs">
-            <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">
-              {repo.access === 'PUBLIC_DOWNLOAD' ? t('publicDownload') : t('approvalRequired')}
-            </span>
-            <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">{tMeta(`langs.${repo.contentLanguage}`)}</span>
-            {repo.license && <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">{repo.license}</span>}
-            {repo.schoolLevel && <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">{tMeta(`levels.${repo.schoolLevel}`)}</span>}
-            {repo.subject?.labels?.de && <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">{repo.subject.labels.de}</span>}
-            {repo.materialType && <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">{tMeta(`types.${repo.materialType}`)}</span>}
-            {repo.educationSector && <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">{tMeta(`sectors.${repo.educationSector}`)}</span>}
-            {repo.difficulty && <span className="rounded bg-[rgb(var(--muted))] px-2 py-1">{tMeta(`difficultyLevels.${repo.difficulty}`)}</span>}
-            {repo.tags?.map((tr) => (
-              <span key={tr.tag.id} className="rounded bg-[rgb(var(--muted))] px-2 py-1">#{tr.tag.name}</span>
-            ))}
-          </div>
-          {(repo.curriculum21 || repo.learningGoals || repo.targetGroup || repo.timeRequired || repo.methodology || repo.prerequisites) && (
-            <div className="space-y-1 border-t border-[rgb(var(--border))] pt-3 text-sm">
-              {repo.curriculum21 && <p><span className="font-medium">{tMeta('curriculum21')}:</span> {repo.curriculum21}</p>}
-              {repo.learningGoals && <p><span className="font-medium">{t('learningGoals')}:</span> {repo.learningGoals}</p>}
-              {repo.targetGroup && <p><span className="font-medium">{tMeta('targetGroup')}:</span> {repo.targetGroup}</p>}
-              {repo.timeRequired && <p><span className="font-medium">{tMeta('timeRequired')}:</span> {repo.timeRequired}</p>}
-              {repo.methodology && <p><span className="font-medium">{tMeta('methodology')}:</span> {repo.methodology}</p>}
-              {repo.prerequisites && <p><span className="font-medium">{tMeta('prerequisites')}:</span> {repo.prerequisites}</p>}
-            </div>
-          )}
-        </section>
+        <Card variant="outlined">
+          <CardContent>
+            <Stack spacing={2}>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{description || '—'}</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                <Chip size="small" label={repo.access === 'PUBLIC_DOWNLOAD' ? t('publicDownload') : t('approvalRequired')} />
+                <Chip size="small" label={tMeta(`langs.${repo.contentLanguage}`)} />
+                {repo.license && <Chip size="small" label={repo.license} />}
+                {repo.schoolLevel && <Chip size="small" label={tMeta(`levels.${repo.schoolLevel}`)} />}
+                {repo.subject?.labels?.de && <Chip size="small" label={repo.subject.labels.de} />}
+                {repo.materialType && <Chip size="small" label={tMeta(`types.${repo.materialType}`)} />}
+                {repo.educationSector && <Chip size="small" label={tMeta(`sectors.${repo.educationSector}`)} />}
+                {repo.difficulty && <Chip size="small" label={tMeta(`difficultyLevels.${repo.difficulty}`)} />}
+                {repo.tags?.map((tr) => (
+                  <Chip key={tr.tag.id} size="small" label={`#${tr.tag.name}`} variant="outlined" />
+                ))}
+              </Box>
+              {(repo.curriculum21 || repo.learningGoals || repo.targetGroup || repo.timeRequired || repo.methodology || repo.prerequisites) && (
+                <>
+                  <Divider />
+                  <Stack spacing={0.5}>
+                    {repo.curriculum21 && <Typography variant="body2"><strong>{tMeta('curriculum21')}:</strong> {repo.curriculum21}</Typography>}
+                    {repo.learningGoals && <Typography variant="body2"><strong>{t('learningGoals')}:</strong> {repo.learningGoals}</Typography>}
+                    {repo.targetGroup && <Typography variant="body2"><strong>{tMeta('targetGroup')}:</strong> {repo.targetGroup}</Typography>}
+                    {repo.timeRequired && <Typography variant="body2"><strong>{tMeta('timeRequired')}:</strong> {repo.timeRequired}</Typography>}
+                    {repo.methodology && <Typography variant="body2"><strong>{tMeta('methodology')}:</strong> {repo.methodology}</Typography>}
+                    {repo.prerequisites && <Typography variant="body2"><strong>{tMeta('prerequisites')}:</strong> {repo.prerequisites}</Typography>}
+                  </Stack>
+                </>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
       )}
 
       {/* =========================== Bearbeiten =========================== */}
       {tab === 'overview' && editMode && (
-        <form onSubmit={saveEdit} className="card space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            {inputField('titleDe', t('title'))}
-            {inputField('access', t('access'), { options: [['PUBLIC_DOWNLOAD', t('publicDownload')], ['APPROVAL_REQUIRED', t('approvalRequired')]] })}
-          </div>
-          {inputField('descDe', t('description'), { rows: 3 })}
-          <h3 className="pt-2 font-semibold">{tMeta('metadataTitle')}</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('subject')}</label>
-              <select className="input" value={form.subjectId ?? ''} onChange={(e) => setForm({ ...form, subjectId: e.target.value })}>
-                <option value="">{tMeta('noSelection')}</option>
-                {subjects.map((s) => (
-                  <option key={s.id} value={s.id}>{s.labels?.de || s.key}</option>
-                ))}
-              </select>
-            </div>
-            {inputField('schoolLevel', t('schoolLevel'), { options: [['', tMeta('noSelection')], ...SCHOOL_LEVELS.map((l) => [l, tMeta(`levels.${l}`)] as [string, string])] })}
-            {inputField('contentLanguage', t('language'), { options: CONTENT_LANGUAGES.map((l) => [l, tMeta(`langs.${l}`)] as [string, string]) })}
-            {inputField('materialType', tMeta('materialType'), { options: [['', tMeta('noSelection')], ...MATERIAL_TYPES.map((mt) => [mt, tMeta(`types.${mt}`)] as [string, string])] })}
-            {inputField('educationSector', tMeta('educationSector'), { options: [['', tMeta('noSelection')], ['GENERAL', tMeta('sectors.GENERAL')], ['VOCATIONAL', tMeta('sectors.VOCATIONAL')]] })}
-            {inputField('license', t('license'), { options: [['', tMeta('noSelection')], ...LICENSES.map((l) => [l, l] as [string, string])] })}
-            {inputField('difficulty', tMeta('difficulty'), { options: [['', tMeta('noSelection')], ['beginner', tMeta('difficultyLevels.beginner')], ['intermediate', tMeta('difficultyLevels.intermediate')], ['advanced', tMeta('difficultyLevels.advanced')]] })}
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {inputField('curriculum21', tMeta('curriculum21'), { placeholder: tMeta('curriculum21Placeholder') })}
-            {inputField('targetGroup', tMeta('targetGroup'), { placeholder: tMeta('targetGroupPlaceholder') })}
-            {inputField('timeRequired', tMeta('timeRequired'), { placeholder: tMeta('timeRequiredPlaceholder') })}
-          </div>
-          {inputField('learningGoals', t('learningGoals'), { rows: 2 })}
-          {inputField('methodology', tMeta('methodology'), { rows: 2 })}
-          {inputField('prerequisites', tMeta('prerequisites'), { rows: 2 })}
-          <div className="flex gap-2">
-            <button type="submit" className="btn-primary" disabled={busy}>
-              {busy ? tCommon('loading') : tCommon('save')}
-            </button>
-            <button type="button" onClick={() => setEditMode(false)} className="btn-secondary">
-              {tCommon('cancel')}
-            </button>
-          </div>
-        </form>
+        <Card variant="outlined">
+          <CardContent>
+            <form onSubmit={saveEdit}>
+              <Stack spacing={2.5}>
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} md={6}>{inputField('titleDe', t('title'))}</Grid>
+                  <Grid item xs={12} md={6}>
+                    {inputField('access', t('access'), { options: [['PUBLIC_DOWNLOAD', t('publicDownload')], ['APPROVAL_REQUIRED', t('approvalRequired')]] })}
+                  </Grid>
+                </Grid>
+                {inputField('descDe', t('description'), { rows: 3 })}
+                <Typography variant="h6" component="h3" sx={{ pt: 1 }}>{tMeta('metadataTitle')}</Typography>
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>{t('subject')}</InputLabel>
+                      <Select
+                        label={t('subject')}
+                        value={form.subjectId ?? ''}
+                        onChange={(e) => setForm({ ...form, subjectId: e.target.value })}
+                      >
+                        <MenuItem value="">{tMeta('noSelection')}</MenuItem>
+                        {subjects.map((s) => (
+                          <MenuItem key={s.id} value={s.id}>{s.labels?.de || s.key}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    {inputField('schoolLevel', t('schoolLevel'), { options: [['', tMeta('noSelection')], ...SCHOOL_LEVELS.map((l) => [l, tMeta(`levels.${l}`)] as [string, string])] })}
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    {inputField('contentLanguage', t('language'), { options: CONTENT_LANGUAGES.map((l) => [l, tMeta(`langs.${l}`)] as [string, string]) })}
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    {inputField('materialType', tMeta('materialType'), { options: [['', tMeta('noSelection')], ...MATERIAL_TYPES.map((mt) => [mt, tMeta(`types.${mt}`)] as [string, string])] })}
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    {inputField('educationSector', tMeta('educationSector'), { options: [['', tMeta('noSelection')], ['GENERAL', tMeta('sectors.GENERAL')], ['VOCATIONAL', tMeta('sectors.VOCATIONAL')]] })}
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    {inputField('license', t('license'), { options: [['', tMeta('noSelection')], ...LICENSES.map((l) => [l, l] as [string, string])] })}
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    {inputField('difficulty', tMeta('difficulty'), { options: [['', tMeta('noSelection')], ['beginner', tMeta('difficultyLevels.beginner')], ['intermediate', tMeta('difficultyLevels.intermediate')], ['advanced', tMeta('difficultyLevels.advanced')]] })}
+                  </Grid>
+                </Grid>
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} md={6}>{inputField('curriculum21', tMeta('curriculum21'), { placeholder: tMeta('curriculum21Placeholder') })}</Grid>
+                  <Grid item xs={12} md={6}>{inputField('targetGroup', tMeta('targetGroup'), { placeholder: tMeta('targetGroupPlaceholder') })}</Grid>
+                  <Grid item xs={12} md={6}>{inputField('timeRequired', tMeta('timeRequired'), { placeholder: tMeta('timeRequiredPlaceholder') })}</Grid>
+                </Grid>
+                {inputField('learningGoals', t('learningGoals'), { rows: 2 })}
+                {inputField('methodology', tMeta('methodology'), { rows: 2 })}
+                {inputField('prerequisites', tMeta('prerequisites'), { rows: 2 })}
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button type="submit" variant="contained" disabled={busy}>
+                    {busy ? tCommon('loading') : tCommon('save')}
+                  </Button>
+                  <Button type="button" onClick={() => setEditMode(false)} variant="outlined">
+                    {tCommon('cancel')}
+                  </Button>
+                </Box>
+              </Stack>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       {/* ======================= Dateien & Versionen ======================= */}
       {tab === 'files' && (
-        <section className="space-y-4">
+        <Stack spacing={2.5}>
           {isMember && (
-            <div className="card space-y-3">
-              <h3 className="font-semibold">{t('newVersionTitle')}</h3>
-              <div className="flex flex-wrap gap-2">
-                <input
-                  className="input flex-1"
-                  placeholder={t('changeNotePlaceholder')}
-                  value={newVersionNote}
-                  onChange={(e) => setNewVersionNote(e.target.value)}
-                />
-                <button onClick={createVersion} className="btn-primary" disabled={busy}>
-                  + {t('newVersion')}
-                </button>
-              </div>
-            </div>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" component="h3" sx={{ mb: 1.5 }}>{t('newVersionTitle')}</Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                  <TextField
+                    placeholder={t('changeNotePlaceholder')}
+                    value={newVersionNote}
+                    onChange={(e) => setNewVersionNote(e.target.value)}
+                    sx={{ flex: 1, minWidth: 240 }}
+                  />
+                  <Button onClick={createVersion} variant="contained" disabled={busy} startIcon={<CallSplitIcon />}>
+                    {t('newVersion')}
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
           )}
           {repo.versions.length === 0 ? (
-            <p className="text-sm text-[rgb(var(--foreground))]/60">{t('noVersions')}</p>
+            <Typography variant="body2" color="text.secondary">{t('noVersions')}</Typography>
           ) : (
-            <div className="space-y-3">
+            <Stack spacing={2}>
               {repo.versions.map((v) => (
-                <div key={v.id} className="card">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-medium">
-                      v{v.version}
-                      {v.changeNote && (
-                        <span className="ml-2 text-sm font-normal text-[rgb(var(--foreground))]/60">{v.changeNote}</span>
-                      )}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-[rgb(var(--foreground))]/50">
-                        {new Date(v.createdAt).toLocaleString()}
-                      </p>
-                      {isMember && (
-                        <>
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            className="hidden"
-                            onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])}
-                          />
-                          <button
-                            onClick={() => { setUploadVersionId(v.id); fileInputRef.current?.click(); }}
-                            className="rounded bg-brand-600 px-2 py-1 text-xs text-white hover:opacity-90"
-                            disabled={busy}
-                          >
-                            ⬆ {t('upload')}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  {v.files.length === 0 ? (
-                    <p className="text-sm text-[rgb(var(--foreground))]/60">{t('noFiles')}</p>
-                  ) : (
-                    <ul className="space-y-1">
-                      {v.files.map((f) => (
-                        <li key={f.id} className="flex items-center justify-between gap-2 rounded bg-[rgb(var(--muted))]/50 px-3 py-2 text-sm">
-                          <span className="min-w-0 truncate">📄 {f.originalName}</span>
-                          <span className="flex shrink-0 items-center gap-3">
-                            <span className="text-xs text-[rgb(var(--foreground))]/50">{formatBytes(Number(f.sizeBytes))}</span>
-                            <button
-                              onClick={() => downloadFile(v.id, f.id)}
-                              className="rounded bg-brand-600 px-2 py-1 text-xs text-white hover:opacity-90"
+                <Card key={v.id} variant="outlined">
+                  <CardContent>
+                    <Box sx={{ mb: 1.5, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                        v{v.version}
+                        {v.changeNote && (
+                          <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1.5, fontWeight: 400 }}>
+                            {v.changeNote}
+                          </Typography>
+                        )}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(v.createdAt).toLocaleString()}
+                        </Typography>
+                        {isMember && (
+                          <>
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              hidden
+                              onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])}
+                            />
+                            <Button
+                              size="small"
+                              variant="contained"
+                              startIcon={<UploadFileIcon />}
+                              disabled={busy}
+                              onClick={() => { setUploadVersionId(v.id); fileInputRef.current?.click(); }}
                             >
-                              {t('download')}
-                            </button>
-                            {isMember && (
-                              <button
-                                onClick={() => deleteFile(v.id, f.id)}
-                                className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:opacity-80"
-                                disabled={busy}
-                              >
-                                ✕
-                              </button>
-                            )}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+                              {t('upload')}
+                            </Button>
+                          </>
+                        )}
+                      </Box>
+                    </Box>
+                    {v.files.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">{t('noFiles')}</Typography>
+                    ) : (
+                      <Stack spacing={1}>
+                        {v.files.map((f) => (
+                          <Box
+                            key={f.id}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 1.5,
+                              borderRadius: 1,
+                              bgcolor: 'action.hover',
+                              px: 1.5,
+                              py: 1,
+                            }}
+                          >
+                            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                              <InsertDriveFileIcon fontSize="small" color="action" />
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.originalName}</span>
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
+                              <Typography variant="caption" color="text.secondary">{formatBytes(Number(f.sizeBytes))}</Typography>
+                              <Button size="small" variant="contained" onClick={() => downloadFile(v.id, f.id)} startIcon={<DownloadIcon />}>
+                                {t('download')}
+                              </Button>
+                              {isMember && (
+                                <IconButton size="small" color="error" onClick={() => deleteFile(v.id, f.id)} disabled={busy} aria-label={tCommon('delete')}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              )}
+                            </Box>
+                          </Box>
+                        ))}
+                      </Stack>
+                    )}
+                  </CardContent>
+                </Card>
               ))}
-            </div>
+            </Stack>
           )}
-        </section>
+        </Stack>
       )}
 
       {/* ============================= Issues ============================= */}
       {tab === 'issues' && (
-        <section className="space-y-4">
+        <Stack spacing={2.5}>
           {openIssue ? (
-            <div className="space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <button onClick={() => setOpenIssue(null)} className="mb-2 text-sm text-brand-600 hover:underline">
-                    ← {tIssues('backToList')}
-                  </button>
-                  <h2 className="text-xl font-bold">
-                    <span className="mr-2 text-[rgb(var(--foreground))]/50">#{openIssue.number}</span>
+            <Stack spacing={2.5}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+                <Box>
+                  <Button
+                    size="small"
+                    onClick={() => setOpenIssue(null)}
+                    startIcon={<ArrowBackIcon />}
+                    sx={{ mb: 1, px: 0 }}
+                  >
+                    {tIssues('backToList')}
+                  </Button>
+                  <Typography variant="h5" component="h2" sx={{ fontWeight: 700 }}>
+                    <Typography component="span" color="text.secondary" sx={{ mr: 1 }}>#{openIssue.number}</Typography>
                     {openIssue.title}
-                  </h2>
-                  <p className="mt-1 text-xs text-[rgb(var(--foreground))]/60">
-                    {openIssue.author.displayName} · {new Date(openIssue.createdAt).toLocaleString()} ·
-                    <span className={`ml-1 rounded px-1.5 py-0.5 text-xs ${
-                      openIssue.status === 'OPEN' ? 'bg-green-100 text-green-700' : 'bg-[rgb(var(--muted))]'
-                    }`}>
-                      {openIssue.status === 'OPEN' ? tIssues('open') : tIssues('closed')}
-                    </span>
-                  </p>
-                </div>
+                  </Typography>
+                  <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {openIssue.author.displayName} · {new Date(openIssue.createdAt).toLocaleString()}
+                    </Typography>
+                    <Chip
+                      size="small"
+                      color={openIssue.status === 'OPEN' ? 'success' : 'default'}
+                      label={openIssue.status === 'OPEN' ? tIssues('open') : tIssues('closed')}
+                    />
+                  </Box>
+                </Box>
                 {isMember && (
-                  <button
+                  <Button
+                    variant="outlined"
+                    color={openIssue.status === 'OPEN' ? 'error' : 'success'}
                     onClick={() => toggleIssue(openIssue)}
-                    className={`btn-secondary text-sm ${openIssue.status === 'OPEN' ? 'text-red-600' : 'text-green-600'}`}
                   >
                     {openIssue.status === 'OPEN' ? tIssues('closeIssue') : tIssues('reopenIssue')}
-                  </button>
+                  </Button>
                 )}
-              </div>
+              </Box>
               {openIssue.description && (
-                <p className="card whitespace-pre-wrap text-sm">{openIssue.description}</p>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{openIssue.description}</Typography>
+                  </CardContent>
+                </Card>
               )}
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                   {tIssues('comments')} ({openIssue.comments?.length ?? 0})
-                </h3>
+                </Typography>
                 {(openIssue.comments ?? []).map((c) => (
-                  <div key={c.id} className="card py-2 text-sm">
-                    <p className="mb-1 text-xs text-[rgb(var(--foreground))]/50">
-                      {c.author.displayName} · {new Date(c.createdAt).toLocaleString()}
-                    </p>
-                    <p className="whitespace-pre-wrap">{c.text}</p>
-                  </div>
+                  <Card key={c.id} variant="outlined">
+                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                        {c.author.displayName} · {new Date(c.createdAt).toLocaleString()}
+                      </Typography>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{c.text}</Typography>
+                    </CardContent>
+                  </Card>
                 ))}
                 {isMember && (
-                  <div className="card space-y-2">
-                    <textarea
-                      className="input"
-                      rows={2}
-                      placeholder={tIssues('commentPlaceholder')}
-                      value={issueComment}
-                      onChange={(e) => setIssueComment(e.target.value)}
-                    />
-                    <button onClick={() => addComment(openIssue.number)} className="btn-primary text-sm">
-                      {tIssues('comment')}
-                    </button>
-                  </div>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Stack spacing={1.5}>
+                        <TextField
+                          multiline
+                          rows={2}
+                          placeholder={tIssues('commentPlaceholder')}
+                          value={issueComment}
+                          onChange={(e) => setIssueComment(e.target.value)}
+                          fullWidth
+                        />
+                        <Button onClick={() => addComment(openIssue.number)} variant="contained">
+                          {tIssues('comment')}
+                        </Button>
+                      </Stack>
+                    </CardContent>
+                  </Card>
                 )}
-              </div>
-            </div>
+              </Stack>
+            </Stack>
           ) : (
             <>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex gap-1">
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
                   {(['', 'OPEN', 'CLOSED'] as const).map((f) => (
-                    <button
+                    <Chip
                       key={f || 'all'}
+                      label={f === '' ? tIssues('all') : f === 'OPEN' ? tIssues('open') : tIssues('closed')}
                       onClick={() => setIssueFilter(f)}
-                      className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-                        issueFilter === f
-                          ? 'bg-brand-600 text-white'
-                          : 'bg-[rgb(var(--muted))] text-[rgb(var(--foreground))]/70 hover:opacity-80'
-                      }`}
-                    >
-                      {f === '' ? tIssues('all') : f === 'OPEN' ? tIssues('open') : tIssues('closed')}
-                    </button>
+                      color={issueFilter === f ? 'primary' : 'default'}
+                      variant={issueFilter === f ? 'filled' : 'outlined'}
+                      size="small"
+                    />
                   ))}
-                </div>
+                </Box>
                 {isMember && (
-                  <button onClick={() => setShowIssueForm(!showIssueForm)} className="btn-primary text-sm">
+                  <Button onClick={() => setShowIssueForm(!showIssueForm)} variant="contained" size="small">
                     + {tIssues('new')}
-                  </button>
+                  </Button>
                 )}
-              </div>
+              </Box>
 
-              {showIssueForm && (
-                <form onSubmit={createIssue} className="card space-y-3">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium">{t('title')}</label>
-                    <input className="input" value={issueTitle} onChange={(e) => setIssueTitle(e.target.value)} required minLength={3} />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium">{t('description')}</label>
-                    <textarea className="input" rows={3} value={issueDesc} onChange={(e) => setIssueDesc(e.target.value)} />
-                  </div>
-                  <div className="flex gap-2">
-                    <button type="submit" className="btn-primary text-sm" disabled={busy}>{tCommon('save')}</button>
-                    <button type="button" onClick={() => setShowIssueForm(false)} className="btn-secondary text-sm">{tCommon('cancel')}</button>
-                  </div>
-                </form>
-              )}
+              <Collapse in={showIssueForm}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <form onSubmit={createIssue}>
+                      <Stack spacing={2}>
+                        <TextField
+                          label={t('title')}
+                          value={issueTitle}
+                          onChange={(e) => setIssueTitle(e.target.value)}
+                          required
+                          slotProps={{ htmlInput: { minLength: 3 } }}
+                          fullWidth
+                        />
+                        <TextField
+                          label={t('description')}
+                          multiline
+                          rows={3}
+                          value={issueDesc}
+                          onChange={(e) => setIssueDesc(e.target.value)}
+                          fullWidth
+                        />
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button type="submit" variant="contained" size="small" disabled={busy}>{tCommon('save')}</Button>
+                          <Button type="button" onClick={() => setShowIssueForm(false)} variant="outlined" size="small">{tCommon('cancel')}</Button>
+                        </Box>
+                      </Stack>
+                    </form>
+                  </CardContent>
+                </Card>
+              </Collapse>
 
               {issues.length === 0 ? (
-                <p className="text-sm text-[rgb(var(--foreground))]/60">{tIssues('empty')}</p>
+                <Typography variant="body2" color="text.secondary">{tIssues('empty')}</Typography>
               ) : (
-                <ul className="space-y-2">
+                <Stack spacing={1.5}>
                   {issues
                     .filter((i) => !issueFilter || i.status === issueFilter)
                     .map((i) => (
-                      <li key={i.id} className="card flex flex-wrap items-center justify-between gap-2 py-3">
-                        <button onClick={() => openIssueDetail(i.number)} className="min-w-0 flex-1 text-left">
-                          <p className="font-medium">
-                            <span className={`mr-2 ${i.status === 'OPEN' ? 'text-green-600' : 'text-[rgb(var(--foreground))]/40'}`}>
-                              {i.status === 'OPEN' ? '●' : '✔'}
-                            </span>
-                            {i.title}
-                            <span className="ml-2 text-sm text-[rgb(var(--foreground))]/50">#{i.number}</span>
-                          </p>
-                          <p className="text-xs text-[rgb(var(--foreground))]/50">
-                            {i.author.displayName} · {new Date(i.createdAt).toLocaleDateString()} ·
-                            {' 💬 '}{i._count?.comments ?? 0}
-                          </p>
-                        </button>
-                        {isMember && (
-                          <button
-                            onClick={() => toggleIssue(i)}
-                            className={`rounded px-2 py-1 text-xs ${
-                              i.status === 'OPEN' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                            }`}
+                      <Card key={i.id} variant="outlined">
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1, px: 2, py: 1.5 }}>
+                          <Button
+                            onClick={() => openIssueDetail(i.number)}
+                            sx={{ textAlign: 'left', minWidth: 0, flex: 1, display: 'block', px: 0 }}
+                            disableRipple
                           >
-                            {i.status === 'OPEN' ? tIssues('closeIssue') : tIssues('reopenIssue')}
-                          </button>
-                        )}
-                      </li>
+                            <Typography variant="body1" sx={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+                              {i.status === 'OPEN'
+                                ? <RadioButtonCheckedIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                                : <CheckCircleIcon sx={{ fontSize: 16, color: 'text.disabled' }} />}
+                              {i.title}
+                              <Typography component="span" variant="body2" color="text.secondary">#{i.number}</Typography>
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              {i.author.displayName} · {new Date(i.createdAt).toLocaleDateString()} ·
+                              <ChatBubbleOutlineIcon sx={{ fontSize: 13 }} /> {i._count?.comments ?? 0}
+                            </Typography>
+                          </Button>
+                          {isMember && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color={i.status === 'OPEN' ? 'error' : 'success'}
+                              onClick={() => toggleIssue(i)}
+                            >
+                              {i.status === 'OPEN' ? tIssues('closeIssue') : tIssues('reopenIssue')}
+                            </Button>
+                          )}
+                        </Box>
+                      </Card>
                     ))}
-                </ul>
+                </Stack>
               )}
             </>
           )}
-        </section>
+        </Stack>
       )}
 
       {/* ========================= Pull Requests ========================= */}
       {tab === 'prs' && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-[rgb(var(--foreground))]/60">{tPrs('hint')}</p>
+        <Stack spacing={2.5}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+            <Typography variant="body2" color="text.secondary">{tPrs('hint')}</Typography>
             {isMember && (
-              <button onClick={() => setShowPrForm(!showPrForm)} className="btn-primary text-sm">
+              <Button onClick={() => setShowPrForm(!showPrForm)} variant="contained" size="small">
                 + {tPrs('new')}
-              </button>
+              </Button>
             )}
-          </div>
+          </Box>
 
-          {showPrForm && (
-            <form onSubmit={createPr} className="card space-y-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium">{tPrs('sourceRepo')}</label>
-                <select className="input" value={prSource} onChange={(e) => setPrSource(e.target.value)} required>
-                  <option value="">—</option>
-                  {(repo.children ?? []).map((c) => (
-                    <option key={c.id} value={c.id}>{jsonTitle(c.title)}</option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-[rgb(var(--foreground))]/50">{tPrs('sourceRepoHint')}</p>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">{t('title')}</label>
-                <input className="input" value={prTitle} onChange={(e) => setPrTitle(e.target.value)} required minLength={3} />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">{t('description')}</label>
-                <textarea className="input" rows={3} value={prDesc} onChange={(e) => setPrDesc(e.target.value)} />
-              </div>
-              <div className="flex gap-2">
-                <button type="submit" className="btn-primary text-sm" disabled={busy}>{tCommon('save')}</button>
-                <button type="button" onClick={() => setShowPrForm(false)} className="btn-secondary text-sm">{tCommon('cancel')}</button>
-              </div>
-            </form>
-          )}
+          <Collapse in={showPrForm}>
+            <Card variant="outlined">
+              <CardContent>
+                <form onSubmit={createPr}>
+                  <Stack spacing={2}>
+                    <Box>
+                      <FormControl fullWidth required>
+                        <InputLabel>{tPrs('sourceRepo')}</InputLabel>
+                        <Select label={tPrs('sourceRepo')} value={prSource} onChange={(e) => setPrSource(e.target.value)}>
+                          <MenuItem value="">—</MenuItem>
+                          {(repo.children ?? []).map((c) => (
+                            <MenuItem key={c.id} value={c.id}>{jsonTitle(c.title)}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        {tPrs('sourceRepoHint')}
+                      </Typography>
+                    </Box>
+                    <TextField
+                      label={t('title')}
+                      value={prTitle}
+                      onChange={(e) => setPrTitle(e.target.value)}
+                      required
+                      slotProps={{ htmlInput: { minLength: 3 } }}
+                      fullWidth
+                    />
+                    <TextField
+                      label={t('description')}
+                      multiline
+                      rows={3}
+                      value={prDesc}
+                      onChange={(e) => setPrDesc(e.target.value)}
+                      fullWidth
+                    />
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button type="submit" variant="contained" size="small" disabled={busy}>{tCommon('save')}</Button>
+                      <Button type="button" onClick={() => setShowPrForm(false)} variant="outlined" size="small">{tCommon('cancel')}</Button>
+                    </Box>
+                  </Stack>
+                </form>
+              </CardContent>
+            </Card>
+          </Collapse>
 
           {prs.length === 0 ? (
-            <p className="text-sm text-[rgb(var(--foreground))]/60">{tPrs('empty')}</p>
+            <Typography variant="body2" color="text.secondary">{tPrs('empty')}</Typography>
           ) : (
-            <ul className="space-y-2">
+            <Stack spacing={1.5}>
               {prs.map((pr) => (
-                <li key={pr.id} className="card flex flex-wrap items-center justify-between gap-2 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">
-                      <span className={`mr-2 ${
-                        pr.status === 'OPEN' ? 'text-green-600' : pr.status === 'MERGED' ? 'text-purple-600' : 'text-[rgb(var(--foreground))]/40'
-                      }`}>
-                        {pr.status === 'OPEN' ? '●' : pr.status === 'MERGED' ? '◎' : '✔'}
-                      </span>
-                      {pr.title}
-                      <span className="ml-2 text-sm text-[rgb(var(--foreground))]/50">#{pr.number}</span>
-                    </p>
-                    <p className="text-xs text-[rgb(var(--foreground))]/50">
-                      {jsonTitle(pr.sourceRepo.title)} → {jsonTitle(pr.targetRepo.title)} ·
-                      {' '}{pr.author.displayName} · {new Date(pr.createdAt).toLocaleDateString()}
-                      {pr.status === 'MERGED' && pr.mergedAt && ` · ${tPrs('merged')} ${new Date(pr.mergedAt).toLocaleDateString()}`}
-                    </p>
-                  </div>
-                  {isOwner && pr.status === 'OPEN' && (
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => mergePr(pr)}
-                        className="rounded bg-purple-100 px-2 py-1 text-xs text-purple-700 hover:opacity-80"
-                        disabled={busy}
-                      >
-                        ⤵ {tPrs('merge')}
-                      </button>
-                      <button
-                        onClick={() => closePr(pr)}
-                        className="rounded bg-[rgb(var(--muted))] px-2 py-1 text-xs hover:opacity-80"
-                        disabled={busy}
-                      >
-                        {tPrs('close')}
-                      </button>
-                    </div>
-                  )}
-                </li>
+                <Card key={pr.id} variant="outlined">
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1, px: 2, py: 1.5 }}>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="body1" sx={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {pr.status === 'OPEN'
+                          ? <RadioButtonCheckedIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                          : pr.status === 'MERGED'
+                            ? <MergeIcon sx={{ fontSize: 16, color: 'secondary.main' }} />
+                            : <CheckCircleIcon sx={{ fontSize: 16, color: 'text.disabled' }} />}
+                        {pr.title}
+                        <Typography component="span" variant="body2" color="text.secondary">#{pr.number}</Typography>
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {jsonTitle(pr.sourceRepo.title)} → {jsonTitle(pr.targetRepo.title)} ·
+                        {' '}{pr.author.displayName} · {new Date(pr.createdAt).toLocaleDateString()}
+                        {pr.status === 'MERGED' && pr.mergedAt && ` · ${tPrs('merged')} ${new Date(pr.mergedAt).toLocaleDateString()}`}
+                      </Typography>
+                    </Box>
+                    {isOwner && pr.status === 'OPEN' && (
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="secondary"
+                          onClick={() => mergePr(pr)}
+                          disabled={busy}
+                          startIcon={<MergeIcon />}
+                        >
+                          {tPrs('merge')}
+                        </Button>
+                        <Button size="small" variant="outlined" onClick={() => closePr(pr)} disabled={busy}>
+                          {tPrs('close')}
+                        </Button>
+                      </Box>
+                    )}
+                  </Box>
+                </Card>
               ))}
-            </ul>
+            </Stack>
           )}
-        </section>
+        </Stack>
       )}
 
       {/* ============================ Mitglieder ============================ */}
       {tab === 'members' && (
-        <section className="space-y-4">
+        <Stack spacing={2.5}>
           {isOwner && (
-            <form onSubmit={addMember} className="card flex flex-wrap items-end gap-2">
-              <div className="flex-1">
-                <label className="mb-1 block text-sm font-medium">{t('addMember')}</label>
-                <input
-                  className="input"
-                  placeholder={t('memberUserIdPlaceholder')}
-                  value={memberUserId}
-                  onChange={(e) => setMemberUserId(e.target.value)}
-                  required
-                />
-                <p className="mt-1 text-xs text-[rgb(var(--foreground))]/50">{t('memberUserIdHint')}</p>
-              </div>
-              <button type="submit" className="btn-primary">{tCommon('save')}</button>
-            </form>
+            <Card variant="outlined">
+              <CardContent>
+                <form onSubmit={addMember}>
+                  <Stack spacing={1.5}>
+                    <TextField
+                      label={t('addMember')}
+                      placeholder={t('memberUserIdPlaceholder')}
+                      value={memberUserId}
+                      onChange={(e) => setMemberUserId(e.target.value)}
+                      required
+                      fullWidth
+                    />
+                    <Typography variant="caption" color="text.secondary">{t('memberUserIdHint')}</Typography>
+                    <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start' }}>{tCommon('save')}</Button>
+                  </Stack>
+                </form>
+              </CardContent>
+            </Card>
           )}
-          <ul className="card divide-y divide-[rgb(var(--border))]/50 text-sm">
-            {repo.members.map((m) => (
-              <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
-                <span>
-                  {m.user.displayName}
-                  <span className="ml-2 text-xs text-[rgb(var(--foreground))]/60">
-                    {m.role}
-                    {m.role !== 'OWNER' && !m.approved && ' (⏳)'}
-                  </span>
-                </span>
-                {isOwner && m.userId !== repo.ownerId && (
-                  <span className="flex gap-1">
-                    {!m.approved && (
-                      <button onClick={() => grantAccess(m.userId)} className="rounded bg-green-100 px-2 py-1 text-xs text-green-700">
-                        ✓ {t('grantAccess')}
-                      </button>
+          <Card variant="outlined">
+            <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+              {repo.members.map((m, idx) => (
+                <Box key={m.id}>
+                  {idx > 0 && <Divider />}
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1, px: 2, py: 1.25 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2">{m.user.displayName}</Typography>
+                      <Chip size="small" variant="outlined" label={m.role} />
+                      {m.role !== 'OWNER' && !m.approved && (
+                        <Chip size="small" color="warning" label="⏳" />
+                      )}
+                    </Box>
+                    {isOwner && m.userId !== repo.ownerId && (
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {!m.approved && (
+                          <Button size="small" variant="outlined" color="success" onClick={() => grantAccess(m.userId)}>
+                            ✓ {t('grantAccess')}
+                          </Button>
+                        )}
+                        <IconButton size="small" color="error" onClick={() => removeMember(m.userId)} aria-label={tCommon('delete')}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
                     )}
-                    <button onClick={() => removeMember(m.userId)} className="rounded bg-red-100 px-2 py-1 text-xs text-red-700">
-                      ✕
-                    </button>
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
+                  </Box>
+                </Box>
+              ))}
+            </CardContent>
+          </Card>
+        </Stack>
       )}
 
       {/* ======================== Sub-Repositories ======================== */}
       {tab === 'children' && (
-        <section className="space-y-4">
-          <p className="text-sm text-[rgb(var(--foreground))]/60">{tMeta('childrenHint')}</p>
+        <Stack spacing={2}>
+          <Typography variant="body2" color="text.secondary">{tMeta('childrenHint')}</Typography>
           {(repo.children ?? []).length === 0 ? (
-            <p className="text-sm text-[rgb(var(--foreground))]/60">{tMeta('noChildren')}</p>
+            <Typography variant="body2" color="text.secondary">{tMeta('noChildren')}</Typography>
           ) : (
-            <ul className="space-y-2">
+            <Stack spacing={1.5}>
               {(repo.children ?? []).map((c) => (
-                <li key={c.id}>
-                  <Link href={`/repositories/${c.id}`} className="card block py-3 hover:border-brand-500">
-                    <p className="font-medium">📦 {jsonTitle(c.title)}</p>
-                    <p className="text-xs text-[rgb(var(--foreground))]/50">
-                      {c.owner.displayName} · {new Date(c.updatedAt).toLocaleDateString()}
-                      {(c._count?.issues ?? 0) > 0 && ` · 🐛 ${c._count?.issues}`}
-                      {(c._count?.stars ?? 0) > 0 && ` · ⭐ ${c._count?.stars}`}
-                    </p>
-                  </Link>
-                </li>
+                <Card key={c.id} variant="outlined">
+                  <CardActionArea component={Link} href={`/repositories/${c.id}`}>
+                    <CardContent sx={{ py: 1.75 }}>
+                      <Typography variant="body1" sx={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Inventory2Icon fontSize="small" color="action" />
+                        {jsonTitle(c.title)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {c.owner.displayName} · {new Date(c.updatedAt).toLocaleDateString()}
+                        {(c._count?.issues ?? 0) > 0 && ` · 🐛 ${c._count?.issues}`}
+                        {(c._count?.stars ?? 0) > 0 && ` · ⭐ ${c._count?.stars}`}
+                      </Typography>
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
               ))}
-            </ul>
+            </Stack>
           )}
-        </section>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 }

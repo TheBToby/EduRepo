@@ -1,5 +1,10 @@
 'use client';
 
+// Theme-Umschalter als MUI IconButton (Licht → Dunkel → System).
+import { IconButton } from '@mui/material';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import SettingsBrightnessIcon from '@mui/icons-material/SettingsBrightness';
 import { useTheme } from 'next-themes';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -11,8 +16,8 @@ export function ThemeToggle() {
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    // Hydration-Safe-Placeholder
-    return <div className="h-9 w-9" />;
+    // Hydration-Safe-Placeholder (gleiche Groesse wie der Button)
+    return <IconButton disabled size="small" aria-label={t('theme')} />;
   }
 
   const cycle = () => {
@@ -21,16 +26,14 @@ export function ThemeToggle() {
   };
 
   const label = theme === 'light' ? t('light') : theme === 'dark' ? t('dark') : t('system');
-  const icon = theme === 'light' ? '☀️' : theme === 'dark' ? '🌙' : '🖥️';
+  const icon =
+    theme === 'light' ? <LightModeIcon fontSize="small" /> :
+    theme === 'dark' ? <DarkModeIcon fontSize="small" /> :
+    <SettingsBrightnessIcon fontSize="small" />;
 
   return (
-    <button
-      onClick={cycle}
-      className="btn-secondary h-9 w-9 p-0"
-      title={`${t('theme')}: ${label}`}
-      aria-label={`${t('theme')}: ${label}`}
-    >
-      <span aria-hidden>{icon}</span>
-    </button>
+    <IconButton onClick={cycle} size="small" title={`${t('theme')}: ${label}`} aria-label={`${t('theme')}: ${label}`}>
+      {icon}
+    </IconButton>
   );
 }

@@ -281,7 +281,7 @@ Siehe detaillierte Anforderungen: [FA-ROLE](#611-rollen--berechtigungen-fa-role)
 
 | Schicht | Technologie | Begründung |
 |---|---|---|
-| **Frontend** | **Next.js (React) + TypeScript + Tailwind CSS** | SSR/SSG, hervorragende i18n-Unterstützung, performant, grosse Community; UI-Komponenten (z. B. shadcn/ui) für schnelles, modernes UI inkl. Dark Mode. |
+| **Frontend** | **Next.js (React) + TypeScript + Material UI (MUI)** | SSR/SSG, hervorragende i18n-Unterstützung, performant, grosse Community; Material-UI-Komponenten für schnelles, modernes UI inkl. Dark Mode. |
 | **Backend** | **NestJS (Node.js, TypeScript)** | Modular, gut für komplexe Domäne (Auth, Repos, Moderation, Chat), WebSocket-Support für Echtzeit-Chat. |
 | **API** | REST (primär) + WebSocket (Chat) | Einfach, breit verstanden. GraphQL optional später. |
 | **Datenbank** | **PostgreSQL** | Robust, relationale Integrität, Volltextsuche, JSON-Spalten für flexible Metadaten. |

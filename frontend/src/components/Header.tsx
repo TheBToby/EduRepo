@@ -1,4 +1,10 @@
+'use client';
+
+// Kopfzeile als MUI AppBar: Logo/Claim, Sprachumschalter, Theme-Umschalter,
+// Nutzerbereich. Sticky mit sanftem Hintergrund-Blur.
+import { AppBar, Box, Container, Divider, Toolbar, Typography } from '@mui/material';
 import { useTranslations } from 'next-intl';
+import { Link } from '../i18n/navigation';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
 import { HeaderUserArea } from './HeaderUserArea';
@@ -6,20 +12,54 @@ import { HeaderUserArea } from './HeaderUserArea';
 export function Header() {
   const t = useTranslations('common');
   return (
-    <header className="sticky top-0 z-30 border-b border-[rgb(var(--border))] bg-[rgb(var(--background))]/80 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <a href="/" className="flex items-center gap-2 font-bold">
-          <span className="rounded bg-brand-600 px-2 py-1 text-white">EduRepo</span>
-          <span className="hidden text-sm text-[rgb(var(--foreground))]/60 sm:inline">
-            {t('tagline')}
-          </span>
-        </a>
-        <div className="flex items-center gap-2">
+    <AppBar
+      position="sticky"
+      elevation={0}
+      color="inherit"
+      sx={{
+        borderBottom: 1,
+        borderColor: 'divider',
+        backdropFilter: 'blur(8px)',
+        bgcolor: (theme) =>
+          theme.palette.mode === 'dark'
+            ? 'rgba(30, 41, 59, 0.85)'
+            : 'rgba(255, 255, 255, 0.85)',
+      }}
+    >
+      <Container maxWidth="lg">
+        <Toolbar disableGutters sx={{ minHeight: 64, gap: 2 }}>
+          <Box
+            component={Link}
+            href="/"
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.5, textDecoration: 'none', color: 'inherit' }}
+          >
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: 700,
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                px: 1.25,
+                py: 0.5,
+                borderRadius: 1.5,
+              }}
+            >
+              EduRepo
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ display: { xs: 'none', sm: 'block' } }}
+            >
+              {t('tagline')}
+            </Typography>
+          </Box>
+          <Box sx={{ flexGrow: 1 }} />
           <LanguageSwitcher />
           <ThemeToggle />
           <HeaderUserArea />
-        </div>
-      </div>
-    </header>
+        </Toolbar>
+      </Container>
+    </AppBar>
   );
 }

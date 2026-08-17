@@ -33,7 +33,7 @@ Erstelle, teile, forke und entwickle Lehrmittel gemeinsam – einfach, sicher un
 
 | Schicht | Technologie |
 |---|---|
-| Frontend | **Next.js 14** (App Router) + **TypeScript** + **Tailwind CSS** + `next-intl` + `next-themes` |
+| Frontend | **Next.js 14** (App Router) + **TypeScript** + **Material UI (MUI)** + `next-intl` + `next-themes` |
 | Backend | **NestJS 10** (Node.js, TypeScript) + **Prisma** ORM |
 | Datenbank | **PostgreSQL 16** |
 | Object Storage | **MinIO** (S3-kompatibel, Entwicklung) → Produktion: Swiss S3 (z. B. Exoscale/Infomaniak) |

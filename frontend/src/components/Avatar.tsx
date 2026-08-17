@@ -87,8 +87,8 @@ export function Avatar({ avatarUrl, name, size = 40, className = '', endpoint }:
       width={size}
       height={size}
       onError={() => setFailed(true)}
-      className={`rounded-full object-cover ${className}`}
-      style={{ width: size, height: size }}
+      className={className}
+      style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', display: 'block', flexShrink: 0 }}
     />
   ) : (
     // eslint-disable-next-line @next/next/no-img-element
@@ -97,8 +97,8 @@ export function Avatar({ avatarUrl, name, size = 40, className = '', endpoint }:
       alt=""
       width={size}
       height={size}
-      className={`rounded-full ${className}`}
-      style={{ width: size, height: size }}
+      className={className}
+      style={{ width: size, height: size, borderRadius: '50%', display: 'block', flexShrink: 0 }}
     />
   );
 }

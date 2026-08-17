@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Box, Button, Card, CardContent, Stack, TextField, Typography } from '@mui/material';
+import EmailIcon from '@mui/icons-material/Email';
 import { api } from '../../../lib/api';
 
 export default function ForgotPasswordPage() {
@@ -17,28 +19,43 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="mx-auto max-w-md text-center">
-        <div className="mb-4 text-4xl" aria-hidden>📧</div>
-        <p className="text-[rgb(var(--foreground))]/70">{t('resetRequestDesc')}</p>
-      </div>
+      <Box sx={{ maxWidth: 420, mx: 'auto', textAlign: 'center' }}>
+        <Box sx={{ mb: 2, color: 'primary.main', display: 'flex', justifyContent: 'center' }}>
+          <EmailIcon sx={{ fontSize: 56 }} />
+        </Box>
+        <Typography color="text.secondary">{t('resetRequestDesc')}</Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="mb-2 text-2xl font-bold">{t('resetTitle')}</h1>
-      <p className="mb-6 text-sm text-[rgb(var(--foreground))]/70">{t('resetRequestDesc')}</p>
-      <form onSubmit={submit} className="space-y-4">
-        <input
-          type="email"
-          required
-          className="input"
-          placeholder={t('loginEmail')}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <button type="submit" className="btn-primary w-full">{t('resetSubmit')}</button>
-      </form>
-    </div>
+    <Box sx={{ maxWidth: 420, mx: 'auto' }}>
+      <Typography variant="h5" component="h1" sx={{ fontWeight: 700, mb: 1 }}>
+        {t('resetTitle')}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        {t('resetRequestDesc')}
+      </Typography>
+      <Card variant="outlined">
+        <CardContent sx={{ p: 3 }}>
+          <form onSubmit={submit}>
+            <Stack spacing={2.5}>
+              <TextField
+                type="email"
+                required
+                placeholder={t('loginEmail')}
+                label={t('loginEmail')}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                fullWidth
+              />
+              <Button type="submit" variant="contained" fullWidth size="large">
+                {t('resetSubmit')}
+              </Button>
+            </Stack>
+          </form>
+        </CardContent>
+      </Card>
+    </Box>
   );
 }

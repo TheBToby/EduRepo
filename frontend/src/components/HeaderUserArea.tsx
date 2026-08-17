@@ -2,6 +2,8 @@
 
 // Header-Bereich fuer den angemeldeten Nutzer: Avatar, Name und Abmelden.
 // Gaeste sehen nichts (Login/Registrierung laeuft ueber die Landing Page).
+import { Box, Button, Divider, Tooltip } from '@mui/material';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '../i18n/navigation';
 import { useSession } from './SessionProvider';
@@ -16,26 +18,33 @@ export function HeaderUserArea() {
   if (!user) return null;
 
   return (
-    <div className="ml-2 flex items-center gap-2 border-l border-[rgb(var(--border))] pl-3">
-      <button
-        onClick={() => router.push('/profile')}
-        className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-medium hover:bg-[rgb(var(--muted))]"
-        title={user.email}
-      >
-        {/* Avatar mit Standard-Profilbild, wenn keines hochgeladen wurde */}
-        <Avatar avatarUrl={user.avatarUrl} name={user.displayName || user.email} size={28} />
-        <span className="hidden max-w-[10rem] truncate sm:inline">{user.displayName}</span>
-      </button>
-      <button
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 0.5, pl: 1.5, borderLeft: 1, borderColor: 'divider' }}>
+      <Tooltip title={user.email}>
+        <Button
+          color="inherit"
+          size="small"
+          onClick={() => router.push('/profile')}
+          startIcon={<Avatar avatarUrl={user.avatarUrl} name={user.displayName || user.email} size={24} />}
+          sx={{ maxWidth: 220, textTransform: 'none' }}
+        >
+          <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: { xs: 'none', sm: 'inline' } }}>
+            {user.displayName}
+          </Box>
+        </Button>
+      </Tooltip>
+      <Button
+        color="inherit"
+        size="small"
         onClick={async () => {
           await logout();
           router.push('/');
           router.refresh();
         }}
-        className="rounded-lg px-2 py-1 text-sm font-medium text-[rgb(var(--foreground))]/70 hover:bg-[rgb(var(--muted))]"
+        endIcon={<LogoutIcon />}
+        sx={{ textTransform: 'none' }}
       >
         {tCommon('logout')}
-      </button>
-    </div>
+      </Button>
+    </Box>
   );
 }

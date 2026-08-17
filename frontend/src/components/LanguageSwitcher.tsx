@@ -1,5 +1,7 @@
 'use client';
 
+// Sprachumschalter als kompakte MUI ToggleButtonGroup (DE/FR/IT/EN).
+import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { useLocale } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
 import { locales } from '../i18n/request';
@@ -22,27 +24,29 @@ export function LanguageSwitcher() {
     if (next === locale) return;
     const segments = pathname.split('/');
     if (locales.includes(segments[1] as any)) {
+      // Locale-Segment ersetzen
       segments[1] = next;
     } else {
+      // Locale-Segment einfuegen
       segments.splice(1, 0, next);
     }
     router.push(segments.join('/') || `/${next}`);
   };
 
   return (
-    <div className="flex items-center gap-1" title={t('language')} aria-label={t('language')}>
+    <ToggleButtonGroup
+      exclusive
+      size="small"
+      value={locale}
+      onChange={(_, next) => next && change(next)}
+      aria-label={t('language')}
+      sx={{ mr: 0.5 }}
+    >
       {locales.map((l) => (
-        <button
-          key={l}
-          onClick={() => change(l)}
-          className={`rounded px-2 py-1 text-xs font-semibold transition-colors ${
-            l === locale ? 'bg-brand-600 text-white' : 'hover:bg-[rgb(var(--muted))]'
-          }`}
-          aria-pressed={l === locale}
-        >
+        <ToggleButton key={l} value={l} aria-label={l} sx={{ px: 1, py: 0.25, fontSize: '0.75rem', fontWeight: 600, lineHeight: 1.4 }}>
           {LABELS[l]}
-        </button>
+        </ToggleButton>
       ))}
-    </div>
+    </ToggleButtonGroup>
   );
 }
