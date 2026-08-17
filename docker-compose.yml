@@ -82,11 +82,10 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-edurepo-minio} ${MINIO_ROOT_PASSWORD:-edurepo-minio-secret};
-      mc mb --ignore-existing local/${S3_BUCKET:-edurepo-files} || true;
-      mc anonymous set none local/${S3_BUCKET:-edurepo-files} || true;
-      echo 'Bucket ready: ${S3_BUCKET:-edurepo-files}';
-      exit 0;
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-edurepo-minio} ${MINIO_ROOT_PASSWORD:-edurepo-minio-secret} &&
+      mc mb --ignore-existing local/${S3_BUCKET:-edurepo-files} &&
+      mc anonymous set none local/${S3_BUCKET:-edurepo-files} &&
+      echo 'Bucket ready: ${S3_BUCKET:-edurepo-files}'
       "
     restart: "no"
 
@@ -119,11 +118,13 @@ services:
       APP_SECRET: ${APP_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       # Storage
-      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
       S3_REGION: ${S3_REGION:-us-east-1}
       S3_BUCKET: ${S3_BUCKET:-edurepo-files}
-      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
-      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      # Default: gleiche Credentials wie MinIO selbst (MINIO_ROOT_USER/PASSWORD).
+      # Nur überschreiben, wenn ein dedizierter S3-Service-Account genutzt wird!
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-${MINIO_ROOT_USER:-edurepo-minio}}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-${MINIO_ROOT_PASSWORD:-edurepo-minio-secret}}
       S3_USE_SSL: ${S3_USE_SSL:-false}
       S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT}
       # Upload

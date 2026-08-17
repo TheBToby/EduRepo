@@ -270,6 +270,8 @@ Zusätzlich für den produktiven Einsatz beachten:
 | Änderungen in `package.json` greifen nicht | Image neu bauen: `docker compose up -d --build backend`. |
 | `ENOENT: /app/package.json` (Frontend) oder `Could not find Prisma Schema` (Backend) auf dem Server | Alte Dev-Compose mit `./frontend:/app`-/`./backend:/app`-Mounts aktiv? Für Produktion **nur** `docker-compose.yml` nutzen (keine Override-Datei). Der Fehler entstand, wenn auf dem Server kein Quellcode lag und Docker leere Ordner über `/app` mountete. |
 | `NEXT_PUBLIC_*`-Änderung zeigt keine Wirkung | Wert ist im Frontend-Image eingebrannt → `docker compose up -d --build frontend`. |
+| Backend-Start bricht mit `S3Error: SignatureDoesNotMatch` ab | `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` passen nicht zu den Credentials des S3-Servers. Bei MinIO: Werte müssen `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` entsprechen (oder einem angelegten Service-Account). Einfachste Lösung: `S3_*` in der `.env` leer lassen – docker-compose greift dann automatisch auf `MINIO_ROOT_*` zurück. Danach Backend neu starten. |
+| Backend-Start bricht mit `InvalidAccessKeyId`/403 ab | Access-Key ist dem S3-Server unbekannt (z. B. Tippfehler oder alter Wert nach Rotation). `.env` prüfen. |
 
 ### Logs_inspezionieren
 

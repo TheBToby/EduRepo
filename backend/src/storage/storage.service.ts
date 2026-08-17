@@ -33,9 +33,49 @@ export class StorageService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    const exists = await this.client.bucketExists(this.bucket).catch(() => false);
+    let exists = false;
+    try {
+      exists = await this.client.bucketExists(this.bucket);
+    } catch (err: any) {
+      // Bewusst console.error statt Nest-Logger: main.ts nutzt bufferLogs=true,
+      // wodurch Logger-Ausgaben bei einem Absturz WAHREND des Bootstraps
+      // verworfen würden – diese Diagnose soll aber garantiert sichtbar sein.
+      console.error(
+        `[StorageService] S3-Zugriff fehlgeschlagen (bucketExists "${this.bucket}" auf ` +
+          `${process.env.S3_ENDPOINT || 'http://minio:9000'}): ` +
+          `${err?.code ? err.code + ': ' : ''}${err?.message || err}`,
+      );
+      if (
+        err?.code === 'SignatureDoesNotMatch' ||
+        err?.code === 'InvalidAccessKeyId' ||
+        err?.code === 'AccessDenied' ||
+        err?.code === 'AccessKeyInvalid' ||
+        err?.statusCode === 403
+      ) {
+        console.error(
+          '[StorageService] Hinweis: S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY passen ' +
+            'nicht zu den Credentials des S3-Servers. Bei MinIO müssen sie ' +
+            'MINIO_ROOT_USER / MINIO_ROOT_PASSWORD entsprechen (oder einem ' +
+            'angelegten Service-Account). Werte in der .env prüfen und Container ' +
+            'neu starten!',
+        );
+      }
+      // Storage ist zwingend: Start abbrechen statt Fehler zu verschlucken.
+      throw err;
+    }
     if (!exists) {
-      await this.client.makeBucket(this.bucket, process.env.S3_REGION || 'us-east-1');
+      try {
+        await this.client.makeBucket(this.bucket, process.env.S3_REGION || 'us-east-1');
+      } catch (err: any) {
+        // Bucket wurde evtl. parallel angelegt (minio-init) – dann ist alles ok.
+        const alreadyExists =
+          err?.code === 'BucketAlreadyOwnedByYou' ||
+          err?.code === 'BucketAlreadyExists' ||
+          err?.statusCode === 409;
+        if (!alreadyExists) throw err;
+        this.logger.log(`Bucket bereits vorhanden: ${this.bucket}`);
+        return;
+      }
       this.logger.log(`Bucket erstellt: ${this.bucket}`);
     }
   }
