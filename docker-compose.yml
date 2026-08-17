@@ -74,6 +74,12 @@ services:
       retries: 10
 
   # ---------------------------------------------- MinIO: Bucket auto-create
+  # Initialisiert den Bucket (idempotent) und BLEIBT danach als Health-Guard
+  # aktiv (`tail -f /dev/null`), damit der Stack in `docker compose ps`
+  # durchgehend "healthy" zeigt. Der Healthcheck wird erst grün, wenn der
+  # Bucket erfolgreich angelegt wurde (Marker-Datei /tmp/bucket-init.ok).
+  # Schlägt die Initialisierung fehl, beendet sich der Container – das
+  # Backend startet dann nicht (fail fast, siehe depends_on beim Backend).
   minio-init:
     # Auch hier: aelterer Release fuer x86-64-v1 CPUs (siehe MinIO-Kommentar oben)
     image: ${MC_IMAGE:-minio/mc:RELEASE.2023-01-11T03-14-16Z}
@@ -85,9 +91,20 @@ services:
       mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-edurepo-minio} ${MINIO_ROOT_PASSWORD:-edurepo-minio-secret} &&
       mc mb --ignore-existing local/${S3_BUCKET:-edurepo-files} &&
       mc anonymous set none local/${S3_BUCKET:-edurepo-files} &&
-      echo 'Bucket ready: ${S3_BUCKET:-edurepo-files}'
+      touch /tmp/bucket-init.ok &&
+      echo 'Bucket ready: ${S3_BUCKET:-edurepo-files} – Health-Guard aktiv.' &&
+      exec tail -f /dev/null
       "
-    restart: "no"
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/bucket-init.ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 36
+      start_period: 15s
+    # NOT "no": Nach Host-/Docker-Neustart würde der Guard sonst dauerhaft
+    # "Exited" zeigen (gleicher Anzeigefehler wie ein One-Shot-Job). Die
+    # Initialisierung ist idempotent – ein Re-Run nach Reboot ist sicher.
+    restart: unless-stopped
 
   # ------------------------------------------------------------------ Backend
   # Produktions-Image (Multi-Stage-Build): enthaelt Code, Schema, Prisma-Client
@@ -105,7 +122,7 @@ services:
       redis:
         condition: service_healthy
       minio-init:
-        condition: service_completed_successfully
+        condition: service_healthy
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       # DB

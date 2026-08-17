@@ -75,7 +75,9 @@ Das reicht für Server-Deployments und lokale Tests ohne Hot-Reload.
 Beim **ersten** Start passiert im Hintergrund:
 
 1. PostgreSQL, Redis, MinIO starten (mit Healthchecks).
-2. `minio-init` legt den Bucket `edurepo-files` an.
+2. `minio-init` legt den Bucket `edurepo-files` an und bleibt danach als
+   Health-Guard aktiv (bleibt "healthy" in `docker compose ps`; der Backend-Start
+   wartet auf diesen Healthcheck).
 3. Backend-Entrypoint wendet das DB-Schema an (`prisma migrate deploy`, sobald
    Migrationen existieren; sonst `prisma db push`) und führt den Seed aus
    (Fächer-Katalog + Admin-Konto).
@@ -225,7 +227,7 @@ Die Dateien liegen im Volume `./docker-data/minio`. Für ein Datei-Backup dieses
 Verzeichnis sichern. Alternativ mit `mc` (MinIO Client):
 
 ```bash
-docker compose run --rm minio-init mc mirror local/edurepo-files /backup
+docker compose run --rm --entrypoint mc minio-init mirror local/edurepo-files /backup
 ```
 
 ---
@@ -261,7 +263,7 @@ Zusätzlich für den produktiven Einsatz beachten:
 | Symptom | Ursache / Lösung |
 |---|---|
 | Backend startet nicht, `Cannot connect to Postgres` | Warte, bis der `postgres`-Healthcheck grün ist. `docker compose ps`. |
-| `Bucket ready` fehlt | `minio-init` prüfen: `docker compose logs minio-init`. |
+| `Bucket ready` fehlt / `minio-init` unhealthy | `docker compose logs minio-init` prüfen. Der Service legt den Bucket an und bleibt danach als Health-Guard aktiv (`Up (healthy)`); unhealthy/Exited = Initialisierung fehlgeschlagen (z. B. falsche `MINIO_ROOT_*`-Credentials). |
 | Frontend zeigt "Lädt …" endlos | Vermutlich nicht eingeloggt → `/login`. Oder API nicht erreichbar (`NEXT_PUBLIC_API_URL` prüfen). |
 | OAuth-Redirect fehlerhaft | `PUBLIC_BASE_URL` und Redirect-URIs in Google/Microsoft-Konsole vergleichen. |
 | Keine E-Mails kommen | `SMTP_*` prüfen. Ohne `SMTP_HOST` loggt das Backend Mails nur (Dev-Modus). |

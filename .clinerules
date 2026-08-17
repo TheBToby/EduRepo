@@ -74,6 +74,12 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml build
   `minio/mc:RELEASE.2023-01-11T03-14-16Z`) because the target host CPU lacks x86-64-v2 support;
   newer releases crash with `Fatal glibc error`. Do NOT "update" them unless the host changes.
   Overridable via `MINIO_IMAGE` / `MC_IMAGE`.
+- **`minio-init` is a long-running health-guard, NOT a one-shot job.** It creates the bucket
+  (idempotent), touches `/tmp/bucket-init.ok`, then stays alive via `exec tail -f /dev/null`;
+  its healthcheck (`test -f /tmp/bucket-init.ok`) gates the backend (`depends_on:
+  condition: service_healthy`). This keeps the whole stack "Up (healthy)" in `docker compose ps`.
+  Do NOT convert it back to a one-shot (`restart: "no"` + exit) service and do NOT remove its
+  healthcheck – an exited init container made the stack report unhealthy/exited.
 - **`NEXT_PUBLIC_*` variables are baked into the frontend image at build time.**
   Changing them requires `docker compose up -d --build frontend`.
 - **Browser talks same-origin only**: Next.js rewrites `/api/*` → `API_INTERNAL_URL`
