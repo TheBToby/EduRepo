@@ -1,6 +1,7 @@
 'use client';
 
-// Fusszeile der Anwendung (MUI Paper mit Trennlinie).
+// Kompakte Fusszeile der Anwendung – einzeilig, damit der Hauptinhalt
+// moeglichst viel Platz behaelt (Landing Page passt ohne Scroll).
 import { Box, Typography } from '@mui/material';
 
 export function Footer() {
@@ -10,11 +11,13 @@ export function Footer() {
       sx={{
         borderTop: 1,
         borderColor: 'divider',
-        py: 2.5,
+        py: 1,
+        px: 2,
         textAlign: 'center',
+        flexShrink: 0,
       }}
     >
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
         © {new Date().getFullYear()} EduRepo – Education Repository
       </Typography>
     </Box>

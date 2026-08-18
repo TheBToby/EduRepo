@@ -70,6 +70,8 @@
     "passwordMismatch": "Die Passwörter stimmen nicht überein."
   },
   "nav": {
+    "collapseSidebar": "Seitenleiste einklappen",
+    "expandSidebar": "Seitenleiste ausklappen",
     "dashboard": "Übersicht",
     "myRepos": "Meine Lehrmittel",
     "browse": "Entdecken",

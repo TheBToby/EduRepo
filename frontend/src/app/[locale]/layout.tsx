@@ -6,6 +6,7 @@ import { ThemeProvider } from '../../components/ThemeProvider';
 import { Header } from '../../components/Header';
 import { Footer } from '../../components/Footer';
 import { SessionProvider } from '../../components/SessionProvider';
+import { SidebarStateProvider } from '../../components/SidebarContext';
 import { Sidebar } from '../../components/Sidebar';
 import { SidebarAwareMain } from '../../components/SidebarAwareMain';
 import { Box } from '@mui/material';
@@ -33,14 +34,18 @@ export default async function LocaleLayout({
     <NextIntlClientProvider locale={locale} messages={messages}>
       <ThemeProvider>
         <SessionProvider>
-          <Header />
-          <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 64px)' }}>
-            {/* Sidebar nur fuer angemeldete Nutzer (rendert selbst null) */}
-            <Sidebar />
-            {/* Inhalt: ohne Sidebar zentriert, mit Sidebar eingerueckt */}
-            <SidebarAwareMain>{children}</SidebarAwareMain>
-          </Box>
-          <Footer />
+          <SidebarStateProvider>
+            <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+              <Header />
+              <Box sx={{ display: 'flex', flex: 1, minHeight: 0, width: '100%' }}>
+                {/* Sidebar nur fuer angemeldete Nutzer (rendert selbst null) */}
+                <Sidebar />
+                {/* Inhalt: nutzt den vollstaendig verfuegbaren Platz */}
+                <SidebarAwareMain>{children}</SidebarAwareMain>
+              </Box>
+              <Footer />
+            </Box>
+          </SidebarStateProvider>
         </SessionProvider>
       </ThemeProvider>
     </NextIntlClientProvider>

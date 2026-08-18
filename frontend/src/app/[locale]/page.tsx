@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import LockIcon from '@mui/icons-material/Lock';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
@@ -10,10 +10,12 @@ import InfoIcon from '@mui/icons-material/Info';
 import { Link } from '../../i18n/navigation';
 import { useSession } from '../../components/SessionProvider';
 
+// Landing Page: kompakt geschnitten, damit sie ohne vertikales Scrollen
+// in eine Bildschirmseite passt (Hero -> Features -> Hinweis).
 export default function LandingPage() {
   const t = useTranslations('landing');
   const tNav = useTranslations('nav');
-  const { user, loading } = useSession();
+  const { user } = useSession();
 
   const features = [
     { icon: <MenuBookIcon color="primary" />, title: t('featureReposTitle'), desc: t('featureReposDesc') },
@@ -23,33 +25,64 @@ export default function LandingPage() {
   ];
 
   return (
-    <Stack spacing={{ xs: 6, md: 10 }}>
-      {/* Hero */}
-      <Box sx={{ textAlign: 'center', pt: { xs: 2, md: 4 } }}>
+    <Box
+      sx={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: { xs: 2, md: 3 },
+        minHeight: 0,
+        py: { xs: 0.5, md: 1 },
+        maxWidth: '100%',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Hero – zentriert, nimmt den verfuegbaren Platz ein */}
+      <Box
+        sx={{
+          flex: { md: '1 1 auto' },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          minHeight: 0,
+        }}
+      >
         {user ? (
           // Angemeldet: persoenliche Begruessung + direkter Zugriff auf Features
           <>
-            <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 1.5 }}>
+            <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 0.75 }}>
               {t('welcomeBack')}
             </Typography>
             <Typography
-              variant="h3"
               component="h1"
-              sx={{ fontWeight: 800, letterSpacing: '-0.02em', mx: 'auto', maxWidth: 720 }}
+              noWrap
+              sx={{
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                fontSize: { xs: '1.6rem', sm: '2.1rem', md: '2.6rem' },
+                lineHeight: 1.15,
+                maxWidth: '100%',
+              }}
             >
               {user.displayName}
             </Typography>
-            <Typography variant="h6" color="text.secondary" sx={{ mt: 2.5, mx: 'auto', maxWidth: 600, fontWeight: 400 }}>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ mt: 1, mx: 'auto', maxWidth: 560 }}
+            >
               {t('heroSubtitleLoggedIn')}
             </Typography>
-            <Stack direction="row" spacing={1.5} justifyContent="center" flexWrap="wrap" sx={{ mt: 4 }}>
-              <Button component={Link} href="/dashboard" variant="contained" size="large">
+            <Stack direction="row" spacing={1.5} justifyContent="center" flexWrap="wrap" sx={{ mt: 2 }}>
+              <Button component={Link} href="/dashboard" variant="contained">
                 {tNav('dashboard')}
               </Button>
-              <Button component={Link} href="/repositories" variant="outlined" size="large">
+              <Button component={Link} href="/repositories" variant="outlined">
                 {tNav('myRepos')}
               </Button>
-              <Button component={Link} href="/browse" variant="outlined" size="large">
+              <Button component={Link} href="/browse" variant="outlined">
                 {tNav('browse')}
               </Button>
             </Stack>
@@ -58,19 +91,29 @@ export default function LandingPage() {
           // Gast: Registrierung/Login
           <>
             <Typography
-              variant="h3"
               component="h1"
-              sx={{ fontWeight: 800, letterSpacing: '-0.02em', mx: 'auto', maxWidth: 720 }}
+              sx={{
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                mx: 'auto',
+                maxWidth: 760,
+                fontSize: { xs: '1.6rem', sm: '2.1rem', md: '2.6rem' },
+                lineHeight: 1.2,
+              }}
             >
               {t('heroTitle')}
             </Typography>
-            <Typography variant="h6" color="text.secondary" sx={{ mt: 2.5, mx: 'auto', maxWidth: 600, fontWeight: 400 }}>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ mt: 1.25, mx: 'auto', maxWidth: 600 }}
+            >
               {t('heroSubtitle')}
             </Typography>
-            <Typography variant="subtitle2" color="primary" sx={{ mt: 1.5, fontWeight: 600 }}>
+            <Typography variant="subtitle2" color="primary" sx={{ mt: 1, fontWeight: 600 }}>
               {t('forTeachers')}
             </Typography>
-            <Stack direction="row" spacing={1.5} justifyContent="center" flexWrap="wrap" sx={{ mt: 4 }}>
+            <Stack direction="row" spacing={1.5} justifyContent="center" flexWrap="wrap" sx={{ mt: 2 }}>
               <Button component={Link} href="/register" variant="contained" size="large">
                 {t('ctaRegister')}
               </Button>
@@ -82,16 +125,23 @@ export default function LandingPage() {
         )}
       </Box>
 
-      {/* Features */}
-      <Box sx={{ display: 'grid', gap: 2.5, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' } }}>
+      {/* Features – kompakte Karten */}
+      <Box
+        sx={{
+          display: 'grid',
+          gap: { xs: 1.5, md: 2 },
+          gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+          flexShrink: 0,
+        }}
+      >
         {features.map((f) => (
           <Card key={f.title} variant="outlined" sx={{ height: '100%' }}>
-            <CardContent>
-              <Box sx={{ mb: 1.5 }}>{f.icon}</Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
+              <Box sx={{ mb: 1, '& .MuiSvgIcon-root': { fontSize: 28 } }}>{f.icon}</Box>
+              <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5, fontSize: { xs: '0.9rem', md: '1rem' } }}>
                 {f.title}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', md: '0.825rem' } }}>
                 {f.desc}
               </Typography>
             </CardContent>
@@ -102,13 +152,13 @@ export default function LandingPage() {
       {/* Hinweis nur Lehrpersonen */}
       <Card
         variant="outlined"
-        sx={{ borderColor: 'primary.light', bgcolor: 'primary.main', color: 'primary.contrastText' }}
+        sx={{ flexShrink: 0, borderColor: 'primary.main', bgcolor: 'primary.main', color: 'primary.contrastText' }}
       >
-        <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5, '&:last-child': { pb: 2 } }}>
+        <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
           <InfoIcon />
           <Typography variant="body2">{t('infoOnlyTeachers')}</Typography>
         </CardContent>
       </Card>
-    </Stack>
+    </Box>
   );
 }

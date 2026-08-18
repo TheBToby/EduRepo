@@ -2,13 +2,16 @@
 
 // Moderne Sidebar-Navigation (MUI Drawer): nur fuer angemeldete Nutzer
 // sichtbar. Zeigt ausschliesslich die Features, die fuer Rolle/Profil
-// verfuegbar sind. Permanent auf Desktop, temporär auf Mobile.
-import { useState, type ReactNode } from 'react';
+// verfuegbar sind. Auf dem Desktop ueber den Titelbar-Button zwischen
+// voller Breite und Mini-Variante (nur Icons) umschaltbar; auf Mobile
+// temporaer als Overlay-Drawer.
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '../i18n/navigation';
 import { useSession } from './SessionProvider';
+import { useSidebarState, EXPANDED_WIDTH, COLLAPSED_WIDTH } from './SidebarContext';
 import { Avatar } from './Avatar';
-import { Box, Chip, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material';
+import { Box, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Tooltip, Typography } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SearchIcon from '@mui/icons-material/Search';
@@ -21,11 +24,9 @@ import CloseIcon from '@mui/icons-material/Close';
 type NavItem = {
   href: string;
   labelKey: string;
-  icon: ReactNode;
+  icon: React.ReactNode;
   roles?: Array<'USER' | 'MODERATOR' | 'ADMIN'>; // undefined = alle angemeldeten Nutzer
 };
-
-const DRAWER_WIDTH = 256;
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', labelKey: 'dashboard', icon: <DashboardIcon /> },
@@ -41,6 +42,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, logout } = useSession();
+  const { collapsed, toggle } = useSidebarState();
   const [open, setOpen] = useState(false); // Mobile-Toggle
 
   // Gaeste sehen die Sidebar ueberhaupt nicht
@@ -55,14 +57,17 @@ export function Sidebar() {
     router.refresh();
   };
 
-  const drawerContent = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+  // Breite der permanenten (Desktop-)Sidebar abhaengig vom Zustand
+  const width = collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
+
+  const drawerContent = (mini: boolean) => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflowX: 'hidden' }}>
       {/* Logo */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, height: 64, flexShrink: 0 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: mini ? 2 : 2.5, height: 64, flexShrink: 0 }}>
         <Box
           component="a"
           href="/"
-          sx={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 1.5 }}
+          sx={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}
         >
           <Typography
             variant="subtitle1"
@@ -70,59 +75,95 @@ export function Sidebar() {
               fontWeight: 700,
               bgcolor: 'primary.main',
               color: 'primary.contrastText',
-              px: 1.25,
+              px: 1,
               py: 0.5,
               borderRadius: 1.5,
+              whiteSpace: 'nowrap',
             }}
           >
-            EduRepo
+            {mini ? 'ER' : 'EduRepo'}
           </Typography>
         </Box>
       </Box>
       <Divider />
 
       {/* Navigation */}
-      <List sx={{ flex: 1, px: 1.5, py: 1.5, overflowY: 'auto' }}>
+      <List sx={{ flex: 1, px: 1, py: 1.5, overflowY: 'auto' }}>
         {items.map((item) => {
           const active = pathname === item.href || pathname?.startsWith(item.href + '/');
-          return (
+          const button = (
             <ListItemButton
-              key={item.href}
               selected={active}
               onClick={() => {
                 setOpen(false);
                 router.push(item.href);
               }}
-              sx={{ borderRadius: 1.5, mb: 0.25, '&.Mui-selected': { fontWeight: 600 } }}
+              sx={{
+                borderRadius: 1.5,
+                mb: 0.25,
+                justifyContent: mini ? 'center' : 'flex-start',
+                px: mini ? 1.5 : 2,
+              }}
             >
-              <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
-              <ListItemText primary={t(item.labelKey)} primaryTypographyProps={{ fontWeight: active ? 600 : 500 }} />
+              <ListItemIcon sx={{ minWidth: mini ? 0 : 36, justifyContent: 'center' }}>{item.icon}</ListItemIcon>
+              {!mini && (
+                <ListItemText
+                  primary={t(item.labelKey)}
+                  primaryTypographyProps={{ fontWeight: active ? 600 : 500 }}
+                />
+              )}
             </ListItemButton>
+          );
+          // Mini-Modus: Label als Tooltip anzeigen
+          return mini ? (
+            <Tooltip key={item.href} title={t(item.labelKey)} placement="right" disableInteractive>
+              <Box sx={{ display: 'flex' }}>{button}</Box>
+            </Tooltip>
+          ) : (
+            <Box key={item.href}>{button}</Box>
           );
         })}
       </List>
 
       {/* Nutzer-Bereich unten */}
-      <Box sx={{ p: 1.5, flexShrink: 0 }}>
-        <Divider sx={{ mb: 1.5 }} />
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1, py: 1 }}>
-          {/* Avatar mit Standard-Profilbild, wenn keines hochgeladen wurde */}
-          <Avatar avatarUrl={user.avatarUrl} name={user.displayName || user.email} size={36} />
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user.displayName}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {user.role}
-            </Typography>
+      <Box sx={{ p: 1, flexShrink: 0 }}>
+        <Divider sx={{ mb: 1 }} />
+        {mini ? (
+          // Mini: nur Avatar + Logout-Icon untereinander
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+            <Tooltip title={`${user.displayName} (${user.role})`} placement="right" disableInteractive>
+              <Box sx={{ display: 'flex', p: 0.5 }}>
+                <Avatar avatarUrl={user.avatarUrl} name={user.displayName || user.email} size={32} />
+              </Box>
+            </Tooltip>
+            <Tooltip title={tCommon('logout')} placement="right" disableInteractive>
+              <IconButton size="small" onClick={handleLogout} aria-label={tCommon('logout')}>
+                <LogoutIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
-        </Box>
-        <ListItemButton onClick={handleLogout} sx={{ borderRadius: 1.5, mt: 0.5 }}>
-          <ListItemIcon sx={{ minWidth: 36 }}>
-            <LogoutIcon />
-          </ListItemIcon>
-          <ListItemText primary={tCommon('logout')} />
-        </ListItemButton>
+        ) : (
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1, py: 1 }}>
+              {/* Avatar mit Standard-Profilbild, wenn keines hochgeladen wurde */}
+              <Avatar avatarUrl={user.avatarUrl} name={user.displayName || user.email} size={36} />
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user.displayName}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {user.role}
+                </Typography>
+              </Box>
+            </Box>
+            <ListItemButton onClick={handleLogout} sx={{ borderRadius: 1.5, mt: 0.5 }}>
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <LogoutIcon />
+              </ListItemIcon>
+              <ListItemText primary={tCommon('logout')} />
+            </ListItemButton>
+          </>
+        )}
       </Box>
     </Box>
   );
@@ -149,26 +190,29 @@ export function Sidebar() {
         {open ? <CloseIcon /> : <MenuIcon />}
       </IconButton>
 
-      {/* Permanent auf Desktop */}
+      {/* Permanent auf Desktop – voll oder minimiert */}
       <Drawer
         variant="permanent"
         sx={{
           display: { xs: 'none', md: 'block' },
-          width: DRAWER_WIDTH,
+          width,
           flexShrink: 0,
+          transition: (theme) => theme.transitions.create('width', { duration: theme.transitions.duration.shortest }),
           '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
+            width,
             boxSizing: 'border-box',
             borderRight: 1,
             borderColor: 'divider',
+            overflowX: 'hidden',
+            transition: (theme) => theme.transitions.create('width', { duration: theme.transitions.duration.shortest }),
           },
         }}
         open
       >
-        {drawerContent}
+        {drawerContent(collapsed)}
       </Drawer>
 
-      {/* Temporaer auf Mobile */}
+      {/* Temporaer auf Mobile (immer volle Breite) */}
       <Drawer
         variant="temporary"
         open={open}
@@ -177,12 +221,12 @@ export function Sidebar() {
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
+            width: EXPANDED_WIDTH,
             boxSizing: 'border-box',
           },
         }}
       >
-        {drawerContent}
+        {drawerContent(false)}
       </Drawer>
     </Box>
   );

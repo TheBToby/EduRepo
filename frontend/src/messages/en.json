@@ -70,6 +70,8 @@
     "passwordMismatch": "The passwords do not match."
   },
   "nav": {
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
     "dashboard": "Dashboard",
     "myRepos": "My materials",
     "browse": "Browse",

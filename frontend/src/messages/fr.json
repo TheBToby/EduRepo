@@ -70,6 +70,8 @@
     "passwordMismatch": "Les mots de passe ne correspondent pas."
   },
   "nav": {
+    "collapseSidebar": "Réduire la barre latérale",
+    "expandSidebar": "Déployer la barre latérale",
     "dashboard": "Aperçu",
     "myRepos": "Mes moyens",
     "browse": "Découvrir",
